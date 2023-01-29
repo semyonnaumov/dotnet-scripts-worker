@@ -82,32 +82,35 @@ public class ContainerServiceImpl implements ContainerService {
     }
 
     @Override
-    public String createContainer(String containerName, String tempJobScriptDirOnHost) {
+    public String createContainer(String containerName,
+                                  String sandboxImageName,
+                                  String volumeSrcPath,
+                                  String volumeDestPath,
+                                  String scriptFileName) {
         try {
-            LOGGER.info("Creating container with name={}", containerName);
-            String volumeDescriptor = tempJobScriptDirOnHost +
-                    ":" +
-                    sandboxProperties.getScriptFileInContainerDir() +
-                    ":ro";
-
+            String volumeBindDescriptor = getVolumeBindDescriptor(volumeSrcPath, volumeDestPath);
             HostConfig hostConfig = HostConfig.newHostConfig()
-                    .withBinds(Bind.parse(volumeDescriptor));
+                    .withBinds(Bind.parse(volumeBindDescriptor));
 
-            CreateContainerResponse createContainerResponse = dockerClient.createContainerCmd(sandboxProperties.getSandboxImage())
-                    .withCmd("--bind_ip_all")
+            CreateContainerResponse createContainerResponse = dockerClient.createContainerCmd(sandboxImageName)
+                    .withEntrypoint("dotnet-script", volumeDestPath + "/" + scriptFileName, "-c", "release")
                     .withName(containerName)
-                    .withEnv("MONGO_LATEST_VERSION=3.6")
                     .withHostConfig(hostConfig)
                     .exec();
 
             String containerId = createContainerResponse.getId();
-            LOGGER.info("Container with with name={} created: id={}", containerName, containerId);
+            LOGGER.info("Created container id={}, name={}, mount={} from image {}",
+                    containerId, containerName, volumeBindDescriptor, sandboxImageName);
 
             return containerId;
         } catch (RuntimeException e) {
             LOGGER.error("Failed to create container with name={}", containerName, e);
             throw new ContainerServiceException("Failed to create container with name= " + containerName, e);
         }
+    }
+
+    private String getVolumeBindDescriptor(String volumeSrcPath, String volumeDestPath) {
+        return volumeSrcPath + ":" + volumeDestPath + ":ro";
     }
 
     @Override
@@ -156,16 +159,16 @@ public class ContainerServiceImpl implements ContainerService {
     }
 
     @Override
-    public String getStdout(String containerId) {
-        return getLogs(containerId, true);
+    public String getStdout(String containerId, long timeoutMs) {
+        return getLogs(containerId, true, timeoutMs);
     }
 
     @Override
-    public String getStderr(String containerId) {
-        return getLogs(containerId, false);
+    public String getStderr(String containerId, long timeoutMs) {
+        return getLogs(containerId, false, timeoutMs);
     }
 
-    private String getLogs(String containerId, boolean isStdout) {
+    private String getLogs(String containerId, boolean isStdout, long timeoutMs) {
         try {
             List<String> logLines = new ArrayList<>();
             dockerClient.logContainerCmd(containerId)
@@ -177,7 +180,7 @@ public class ContainerServiceImpl implements ContainerService {
                             logLines.add(item.toString());
                         }
                     })
-                    .awaitCompletion(sandboxProperties.getJobTimeoutMs(), TimeUnit.MILLISECONDS);
+                    .awaitCompletion(timeoutMs, TimeUnit.MILLISECONDS);
 
             return String.join(System.lineSeparator(), logLines);
         } catch (RuntimeException | InterruptedException e) {

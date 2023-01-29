@@ -5,5 +5,5 @@ WORKDIR /app
 # Install dotnet-script runner
 RUN dotnet tool install dotnet-script --tool-path /usr/bin
 
-# Run script from the specified folder
-ENTRYPOINT [ "dotnet-script", "/tmp/script/main.csx", "release"]
+# Run dotnet-script with the specified file
+ENTRYPOINT ["dotnet-script", "/tmp/script/main.csx", "-c", "release"]

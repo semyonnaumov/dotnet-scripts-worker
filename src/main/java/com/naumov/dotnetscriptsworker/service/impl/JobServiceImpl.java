@@ -6,7 +6,7 @@ import com.naumov.dotnetscriptsworker.model.JobResults;
 import com.naumov.dotnetscriptsworker.model.JobTask;
 import com.naumov.dotnetscriptsworker.service.ContainerService;
 import com.naumov.dotnetscriptsworker.service.JobService;
-import com.naumov.dotnetscriptsworker.service.ScriptFilesService;
+import com.naumov.dotnetscriptsworker.service.JobFilesService;
 import com.naumov.dotnetscriptsworker.service.exception.JobServiceException;
 import com.naumov.dotnetscriptsworker.util.Timer;
 import jakarta.annotation.PostConstruct;
@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class JobServiceImpl implements JobService {
     private static final Logger LOGGER = LogManager.getLogger(JobServiceImpl.class);
     private final ContainerService containerService;
-    private final ScriptFilesService scriptFilesService;
+    private final JobFilesService jobFilesService;
     private final JobStatusReporter jobStatusReporter;
     private final SandboxProperties sandboxProperties;
     private volatile Integer maxContainers = 0;
@@ -35,44 +35,54 @@ public class JobServiceImpl implements JobService {
 
     @Autowired
     public JobServiceImpl(ContainerService containerService,
-                          ScriptFilesService scriptFilesService,
+                          JobFilesService jobFilesService,
                           JobStatusReporter jobStatusReporter,
                           SandboxProperties sandboxProperties) {
         this.containerService = containerService;
-        this.scriptFilesService = scriptFilesService;
+        this.jobFilesService = jobFilesService;
         this.jobStatusReporter = jobStatusReporter;
         this.sandboxProperties = sandboxProperties;
     }
 
     @Override
     public JobResults runJob(JobTask jobTask) {
-        // Поднять контейнер, отвалиться по таймауту если не смогли
-        // 1. создать временную папку с файлом скрипта на диске (внутри контейнера джавы)
-        // 2. у нас есть ссылка на нужный тип docker image для дотнет раннера
-        // 3. запустить контейнер из него, смонтировав как том эту временную папку ридонли
-        //    docker run --name sr-<job_id> -v такое-то:туда-то:ro
-        // 4. При старте контейнер должен прочитать эту папку
-        // 5. Опрашивать контейнер
-        // 6. после смерти контейнера прочитать его логи и вернуть пользователю:
-        // docker logs <container_id>
-
         String jobId = jobTask.getJobId();
+        LOGGER.debug("Starting job for jobId={}", jobId);
+
+        JobResults jobResults;
+        try {
+            jobFilesService.prepareJobFiles(jobId, jobTask.getJobScript());
+            jobResults = runJobInContainer(jobId);
+        } catch (RuntimeException e) {
+            LOGGER.error("Failed to run job jobId={}", jobId, e);
+            throw new JobServiceException("Failed to run job jobId=" + jobId, e);
+        } finally {
+            jobFilesService.cleanupJobFiles(jobId);
+        }
+
+        return jobResults;
+    }
+
+    private JobResults runJobInContainer(String jobId) {
         JobResults jobResults = new JobResults(jobId);
         String containerName = sandboxProperties.getSandboxContainerPrefix() + jobId;
         try {
-            LOGGER.debug("Starting job for jobId={}", jobId);
-            scriptFilesService.createScriptFiles(jobId, jobTask.getJobScript());
-
-            LOGGER.debug("Created script files for jobId={}", jobId);
-            String tempDirPath = scriptFilesService.getTempJobScriptDirectoryPath(jobId);
-            String containerId = containerService.createContainer(containerName, tempDirPath);
+            String tempDirPath = jobFilesService.getTempJobScriptDirectoryPath(jobId).toString();
+            String containerId = containerService.createContainer(
+                    containerName,
+                    sandboxProperties.getSandboxImage(),
+                    tempDirPath,
+                    sandboxProperties.getScriptFileInContainerDir(),
+                    sandboxProperties.getScriptFileName()
+            );
 
             LOGGER.debug("Starting container containerId={} for job jobId={}", containerId, jobId);
             containerService.startContainer(containerId);
             jobStatusReporter.reportJobStartedAsync(jobId);
 
             JobResults.Status completionStatus;
-            if (completedInTime(containerId, sandboxProperties.getJobTimeoutMs())) {
+            Long jobTimeoutMs = sandboxProperties.getJobTimeoutMs();
+            if (completedInTime(containerId, jobTimeoutMs)) {
                 completionStatus = containerService.getExitCode(containerId) == 0
                         ? JobResults.Status.SUCCEEDED
                         : JobResults.Status.FAILED;
@@ -84,15 +94,11 @@ public class JobServiceImpl implements JobService {
             }
 
             jobResults.setFinishedWith(completionStatus);
-            jobResults.setStdout(containerService.getStdout(containerId));
-            jobResults.setStderr(containerService.getStderr(containerId));
+            jobResults.setStdout(containerService.getStdout(containerId, jobTimeoutMs));
+            jobResults.setStderr(containerService.getStderr(containerId, jobTimeoutMs));
             jobStatusReporter.reportJobFinishedAsync(jobResults);
-        } catch (RuntimeException e) {
-            LOGGER.error("Failed to run script job jobId={}", jobId, e);
-            throw new JobServiceException("Failed to run script job jobId=" + jobId, e);
         } finally {
             containerService.removeForcefullyContainer(containerName);
-            scriptFilesService.removeScriptFiles(jobId);
         }
 
         return jobResults;

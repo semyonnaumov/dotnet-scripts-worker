@@ -1,5 +1,6 @@
 package com.naumov.dotnetscriptsworker.service;
 
+import java.nio.file.Path;
 import java.util.List;
 
 public interface ContainerService {
@@ -10,7 +11,11 @@ public interface ContainerService {
 
     List<String> listStoppedContainers();
 
-    String createContainer(String containerName, String tempJobScriptDirOnHost);
+    String createContainer(String containerName,
+                           String sandboxImageName,
+                           String volumeSrcPath,
+                           String volumeDestPath,
+                           String scriptFileName);
 
     void startContainer(String containerId);
 
@@ -20,9 +25,9 @@ public interface ContainerService {
 
     void stopContainers(List<String> containerId);
 
-    String getStdout(String containerId);
+    String getStdout(String containerId, long timeoutMs);
 
-    String getStderr(String containerId);
+    String getStderr(String containerId, long timeoutMs);
 
     Long getExitCode(String containerId);
 
