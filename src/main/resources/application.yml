@@ -1,0 +1,35 @@
+worker:
+  sandbox:
+    os: linux
+    platform: dotnet-7
+    worker-type: ${worker.sandbox.os}-${worker.sandbox.platform}
+    max-concurrent-sandboxes: 2
+    sandbox-init-timeout-ms: 60000
+    job-timeout-ms: 120000
+    sandbox-image: sandbox:${worker.sandbox.worker-type}
+    sandbox-container-prefix: job-
+    script-file-name: main.csx # todo add env to dockerfile?
+#    script-files-on-host-dir: /tmp/scripts # Application folder to write script files to
+    script-files-on-host-dir: /Users/snaumov/Desktop/scripts # Application folder to write script files to
+    script-file-in-container-dir: /tmp/script # DinD container script file location
+  docker-client:
+#    docker-host: tcp://localhost:2376
+    docker-host: unix:/var/run/docker.sock
+    docker-tls-verify: false
+    docker-cert-path: /Users/snaumov/.docker
+    registry-user: registryUser
+    registry-password: registryPass
+    registry-email: registryMail
+    registry-url: registryUrl
+  kafka:
+    broker-url: localhost:9092
+    jobs-topic: pending-${worker.sandbox.worker-type}
+    running-topic: running
+    finished-topic: finished
+    producer-acks: 1
+    consumer-concurrency: ${worker.sandbox.max-concurrent-sandboxes}
+    consumer-group: workers.${worker.sandbox.worker-type}
+
+logging:
+  level:
+    com.naumov.dotnetscriptsworker: debug
