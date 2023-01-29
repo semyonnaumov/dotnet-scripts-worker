@@ -9,8 +9,7 @@ import org.springframework.stereotype.Component;
 public class JobStartedDtoMapper implements DtoMapper<Job, JobStartedDto> {
 
     @Override
-    public JobStartedDto map(Job entity) {
-        // TODO
-        return new JobStartedDto();
+    public JobStartedDto map(Job job) {
+        return new JobStartedDto(job.getJobId());
     }
 }

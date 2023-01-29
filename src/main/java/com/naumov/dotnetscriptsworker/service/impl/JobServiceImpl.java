@@ -20,10 +20,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class JobServiceImpl implements JobService {
     private static final Logger LOGGER = LogManager.getLogger(JobServiceImpl.class);
-    private static final Long IS_RUNNING_REQUEST_INTERVAL_MS = 100L;
     private final ContainerService containerService;
     private final ScriptFilesService scriptFilesService;
-//    private final JobStatusReporter jobStatusReporter;
+    private final JobStatusReporter jobStatusReporter;
     private final SandboxProperties sandboxProperties;
     private volatile Integer maxContainers = 0;
     private final AtomicInteger availableContainers = new AtomicInteger(0);
@@ -37,11 +36,11 @@ public class JobServiceImpl implements JobService {
     @Autowired
     public JobServiceImpl(ContainerService containerService,
                           ScriptFilesService scriptFilesService,
-//                          JobStatusReporter jobStatusReporter,
+                          JobStatusReporter jobStatusReporter,
                           SandboxProperties sandboxProperties) {
         this.containerService = containerService;
         this.scriptFilesService = scriptFilesService;
-//        this.jobStatusReporter = jobStatusReporter;
+        this.jobStatusReporter = jobStatusReporter;
         this.sandboxProperties = sandboxProperties;
     }
 
@@ -70,6 +69,7 @@ public class JobServiceImpl implements JobService {
 
             LOGGER.debug("Starting container containerId={} for job jobId={}", containerId, jobId);
             containerService.startContainer(containerId);
+            jobStatusReporter.reportJobStartedAsync(jobId);
 
             JobResults.Status completionStatus;
             if (completedInTime(containerId, sandboxProperties.getJobTimeoutMs())) {
@@ -86,6 +86,7 @@ public class JobServiceImpl implements JobService {
             jobResults.setFinishedWith(completionStatus);
             jobResults.setStdout(containerService.getStdout(containerId));
             jobResults.setStderr(containerService.getStderr(containerId));
+            jobStatusReporter.reportJobFinishedAsync(jobResults);
         } catch (RuntimeException e) {
             LOGGER.error("Failed to run script job jobId={}", jobId, e);
             throw new JobServiceException("Failed to run script job jobId=" + jobId, e);

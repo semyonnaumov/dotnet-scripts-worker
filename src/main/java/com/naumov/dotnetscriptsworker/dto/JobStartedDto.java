@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class JobStartedDto {
-    private String jobId;
+    private final String jobId;
 }
