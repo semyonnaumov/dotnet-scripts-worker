@@ -12,6 +12,7 @@ import com.naumov.dotnetscriptsworker.sync.ContainerizedJob;
 import com.naumov.dotnetscriptsworker.sync.ContainerizedJobAllocationException;
 import com.naumov.dotnetscriptsworker.sync.ContainerizedJobsPool;
 import com.naumov.dotnetscriptsworker.util.Timer;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,6 +41,24 @@ public class JobServiceImpl implements JobService {
         this.jobStatusReporter = jobStatusReporter;
         this.sandboxProperties = sandboxProperties;
         this.containerizedJobsPool = containerizedJobsPool;
+    }
+
+    @PostConstruct
+    public void init() {
+        try {
+            LOGGER.info("{} initialization: starting container environment cleanup",
+                    JobServiceImpl.class.getSimpleName());
+            List<String> allContainers = containerService.listAllContainers();
+            for (String containerId : allContainers) {
+                containerService.removeContainer(containerId, false);
+            }
+            LOGGER.info("{} initialization: finished container environment cleanup",
+                    JobServiceImpl.class.getSimpleName());
+        } catch (RuntimeException e) {
+            LOGGER.error("{} initialization: failed container environment cleanup",
+                    JobServiceImpl.class.getSimpleName(), e);
+            throw e;
+        }
     }
 
     @Override
@@ -122,6 +141,7 @@ public class JobServiceImpl implements JobService {
                 completionStatus = containerService.getExitCode(containerId) == 0
                         ? JobResults.Status.SUCCEEDED
                         : JobResults.Status.FAILED;
+                LOGGER.info("Job {} finished in time, container {} stopped", jobId, containerId);
             } else {
                 LOGGER.info("Job {} exceeded time limit, container {} will be stopped", jobId, containerId);
                 completionStatus = JobResults.Status.TIME_LIMIT_EXCEEDED;
@@ -135,9 +155,8 @@ public class JobServiceImpl implements JobService {
             LOGGER.info("Finished job {} in container {}", jobId, containerId);
 
             return jobResults;
-        } catch (RuntimeException e) {
+        } finally {
             containerService.removeContainer(containerId, true);
-            throw e;
         }
     }
 
@@ -153,16 +172,25 @@ public class JobServiceImpl implements JobService {
 
     @PreDestroy
     public void shutdown() {
-        List<ContainerizedJob> containerizedJobs = containerizedJobsPool.getContainerizedJobs();
-        LOGGER.info("{} shutdown. Shutting down and removing containers for containerized jobs: {}",
-                JobServiceImpl.class.getSimpleName(), containerizedJobs);
+        try {
+            List<ContainerizedJob> containerizedJobs = containerizedJobsPool.getContainerizedJobs();
+            LOGGER.info("{} shutdown: removing containers for containerized jobs: {}",
+                    JobServiceImpl.class.getSimpleName(), containerizedJobs);
 
-        for (ContainerizedJob containerizedJob : containerizedJobs) {
-            String containerId = containerizedJob.getContainerId();
-            if (containerId != null) {
-                containerService.stopContainer(containerId, false);
-                containerService.removeContainer(containerId, false);
+            for (ContainerizedJob containerizedJob : containerizedJobs) {
+                String containerId = containerizedJob.getContainerId();
+                if (containerId != null) {
+                    containerService.stopContainer(containerId, false);
+                    containerService.removeContainer(containerId, false);
+                }
             }
+
+            LOGGER.info("{} shutdown: finished removing containers for containerized jobs",
+                    JobServiceImpl.class.getSimpleName());
+        } catch (RuntimeException e) {
+            LOGGER.error("{} shutdown: failed to remove containers for containerized jobs",
+                    JobServiceImpl.class.getSimpleName(), e);
+            throw e;
         }
     }
 }

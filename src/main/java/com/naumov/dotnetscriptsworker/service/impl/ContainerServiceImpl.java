@@ -10,7 +10,6 @@ import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
-import com.naumov.dotnetscriptsworker.config.props.SandboxProperties;
 import com.naumov.dotnetscriptsworker.service.ContainerService;
 import com.naumov.dotnetscriptsworker.service.exception.ContainerServiceException;
 import jakarta.annotation.PreDestroy;
@@ -181,7 +180,7 @@ public class ContainerServiceImpl implements ContainerService {
     public Long getExitCode(String containerId) {
         try {
             InspectContainerResponse rs = dockerClient.inspectContainerCmd(containerId).exec();
-            LOGGER.error("Received exit code for container {}", containerId);
+            LOGGER.info("Received exit code for container {}", containerId);
             return rs.getState().getExitCodeLong();
         } catch (RuntimeException e) {
             LOGGER.error("Failed to receive exit code for container {}", containerId, e);
