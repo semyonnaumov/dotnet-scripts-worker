@@ -18,7 +18,6 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import java.util.HashMap;
 
-@Profile("!dev")
 @Configuration
 public class KafkaConsumerConfiguration {
     private final KafkaProperties kafkaProperties;
@@ -38,8 +37,6 @@ public class KafkaConsumerConfiguration {
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, JobTaskDto.class.getName());
 
-        // TODO как отдавать ACK при получении битого сообщения (не смогли десериализовать)?
-        //  мб он уже отдается?
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
@@ -49,14 +46,7 @@ public class KafkaConsumerConfiguration {
         factory.setConsumerFactory(jobsConsumerFactory());
         factory.setConcurrency(kafkaProperties.getConsumerConcurrency());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
-        return factory;
-    }
 
-    @Bean
-    public KafkaListenerErrorHandler kafkaListenerErrorHandler() {
-        return (msg, ex) -> {
-            // TODO customize
-            return null;
-        };
+        return factory;
     }
 }

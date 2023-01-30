@@ -5,17 +5,24 @@ import lombok.Data;
 @Data
 public class JobResults {
     private final String jobId;
-    private JobResults.Status finishedWith;
-    private String stdout;
-    private String stderr;
+    private JobResults.Status status;
+    private ScriptResults scriptResults;
 
-    /**
-     * What end user sees
-     */
     public enum Status {
-        SUCCEEDED,
-        FAILED,
-        TIME_LIMIT_EXCEEDED,
+        ACCEPTED,
         REJECTED
+    }
+
+    @Data
+    public static class ScriptResults {
+        private Status finishedWith;
+        private String stdout;
+        private String stderr;
+
+        public enum Status {
+            SUCCEEDED,
+            FAILED,
+            TIME_LIMIT_EXCEEDED
+        }
     }
 }

@@ -1,7 +1,7 @@
 package com.naumov.dotnetscriptsworker.service.impl;
 
 import com.naumov.dotnetscriptsworker.config.props.SandboxProperties;
-import com.naumov.dotnetscriptsworker.kafka.JobStatusReporter;
+import com.naumov.dotnetscriptsworker.kafka.JobStatusProducer;
 import com.naumov.dotnetscriptsworker.model.JobResults;
 import com.naumov.dotnetscriptsworker.model.JobTask;
 import com.naumov.dotnetscriptsworker.service.ContainerService;
@@ -26,19 +26,19 @@ public class JobServiceImpl implements JobService {
     private static final Logger LOGGER = LogManager.getLogger(JobServiceImpl.class);
     private final ContainerService containerService;
     private final JobFilesService jobFilesService;
-    private final JobStatusReporter jobStatusReporter;
+    private final JobStatusProducer jobStatusProducer;
     private final SandboxProperties sandboxProperties;
     private final ContainerizedJobsPool containerizedJobsPool;
 
     @Autowired
     public JobServiceImpl(ContainerService containerService,
                           JobFilesService jobFilesService,
-                          JobStatusReporter jobStatusReporter,
+                          JobStatusProducer jobStatusProducer,
                           SandboxProperties sandboxProperties,
                           ContainerizedJobsPool containerizedJobsPool) {
         this.containerService = containerService;
         this.jobFilesService = jobFilesService;
-        this.jobStatusReporter = jobStatusReporter;
+        this.jobStatusProducer = jobStatusProducer;
         this.sandboxProperties = sandboxProperties;
         this.containerizedJobsPool = containerizedJobsPool;
     }
@@ -50,7 +50,8 @@ public class JobServiceImpl implements JobService {
                     JobServiceImpl.class.getSimpleName());
             List<String> allContainers = containerService.listAllContainers();
             for (String containerId : allContainers) {
-                containerService.removeContainer(containerId, false);
+                // TODO this kills all the containers (even kafka) when testing on local machine
+//                containerService.removeContainer(containerId, false);
             }
             LOGGER.info("{} initialization: finished container environment cleanup",
                     JobServiceImpl.class.getSimpleName());
@@ -62,7 +63,7 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
-    public JobResults runJob(JobTask jobTask) {
+    public void runJob(JobTask jobTask) {
         String jobId = jobTask.getJobId();
         JobResults jobResults = new JobResults(jobId);
 
@@ -72,18 +73,17 @@ public class JobServiceImpl implements JobService {
             if (containerizedJob.isRequestedMultipleTimes()) {
                 // such job is already running - do nothing (docker-wide deduping)
                 LOGGER.info("Skipped running job {}, it is a duplicate", jobId);
-                jobResults.setFinishedWith(JobResults.Status.FAILED);
-                jobStatusReporter.reportJobFinishedAsync(jobResults);
-                return jobResults; // TODO delete after testing web endpoint deletion
+                return;
             }
         } catch (ContainerizedJobAllocationException e) {
             // unable to run this job right now - reject
             LOGGER.warn("Job {} was rejected", jobId, e);
-            jobResults.setFinishedWith(JobResults.Status.REJECTED);
-            jobStatusReporter.reportJobFinishedAsync(jobResults);
-            return jobResults; // TODO delete after testing web endpoint deletion
+            jobResults.setStatus(JobResults.Status.REJECTED);
+            jobStatusProducer.reportJobFinishedAsync(jobResults);
+            return;
         }
 
+        jobResults.setStatus(JobResults.Status.ACCEPTED);
         LOGGER.debug("Allocated container slot for {}", jobId);
 
         try {
@@ -91,10 +91,11 @@ public class JobServiceImpl implements JobService {
 
             String containerId = startJobContainer(jobId);
             containerizedJob.setContainerId(containerId);
-            jobStatusReporter.reportJobStartedAsync(jobId);
+            jobStatusProducer.reportJobStartedAsync(jobId);
 
-            jobResults = getJobContainerResults(jobId, containerId);
-            jobStatusReporter.reportJobFinishedAsync(jobResults);
+            JobResults.ScriptResults scriptResults = getJobContainerResults(jobId, containerId);
+            jobResults.setScriptResults(scriptResults);
+            jobStatusProducer.reportJobFinishedAsync(jobResults);
         } catch (RuntimeException e) {
             LOGGER.error("Failed to run job {}", jobId, e);
             throw new JobServiceException("Failed to run job " + jobId, e);
@@ -102,8 +103,6 @@ public class JobServiceImpl implements JobService {
             jobFilesService.cleanupJobFiles(jobId);
             containerizedJobsPool.reclaim(containerizedJob);
         }
-
-        return jobResults;
     }
 
     private String startJobContainer(String jobId) {
@@ -129,32 +128,32 @@ public class JobServiceImpl implements JobService {
         }
     }
 
-    private JobResults getJobContainerResults(String jobId,
-                                              String containerId) {
+    private JobResults.ScriptResults getJobContainerResults(String jobId,
+                                                            String containerId) {
         long jobTimeoutMs = sandboxProperties.getJobTimeoutMs();
         long containerOperationsTimeoutMs = sandboxProperties.getContainerOperationsTimeoutMs();
 
         try {
-            JobResults jobResults = new JobResults(jobId);
-            JobResults.Status completionStatus;
+            JobResults.ScriptResults scriptResults = new JobResults.ScriptResults();
+            JobResults.ScriptResults.Status completionStatus;
             if (completedInTime(containerId, jobTimeoutMs)) {
                 completionStatus = containerService.getExitCode(containerId) == 0
-                        ? JobResults.Status.SUCCEEDED
-                        : JobResults.Status.FAILED;
+                        ? JobResults.ScriptResults.Status.SUCCEEDED
+                        : JobResults.ScriptResults.Status.FAILED;
                 LOGGER.info("Job {} finished in time, container {} stopped", jobId, containerId);
             } else {
                 LOGGER.info("Job {} exceeded time limit, container {} will be stopped", jobId, containerId);
-                completionStatus = JobResults.Status.TIME_LIMIT_EXCEEDED;
+                completionStatus = JobResults.ScriptResults.Status.TIME_LIMIT_EXCEEDED;
                 containerService.stopContainer(containerId, true);
             }
 
-            jobResults.setFinishedWith(completionStatus);
-            jobResults.setStdout(containerService.getStdout(containerId, containerOperationsTimeoutMs));
-            jobResults.setStderr(containerService.getStderr(containerId, containerOperationsTimeoutMs));
+            scriptResults.setFinishedWith(completionStatus);
+            scriptResults.setStdout(containerService.getStdout(containerId, containerOperationsTimeoutMs));
+            scriptResults.setStderr(containerService.getStderr(containerId, containerOperationsTimeoutMs));
 
             LOGGER.info("Finished job {} in container {}", jobId, containerId);
 
-            return jobResults;
+            return scriptResults;
         } finally {
             containerService.removeContainer(containerId, true);
         }
