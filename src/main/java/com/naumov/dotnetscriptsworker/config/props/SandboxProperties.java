@@ -12,7 +12,7 @@ public class SandboxProperties {
     private String platform;
     private String workerType;
     private Integer maxConcurrentSandboxes;
-    private Long sandboxInitTimeoutMs;
+    private Long containerOperationsTimeoutMs;
     private Long jobTimeoutMs;
     private String sandboxImage;
     private String sandboxContainerPrefix;

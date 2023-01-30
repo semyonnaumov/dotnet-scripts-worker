@@ -4,6 +4,8 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.api.exception.NotFoundException;
+import com.github.dockerjava.api.exception.NotModifiedException;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Frame;
@@ -27,12 +29,10 @@ import java.util.stream.Collectors;
 public class ContainerServiceImpl implements ContainerService {
     private static final Logger LOGGER = LogManager.getLogger(ContainerServiceImpl.class);
     private final DockerClient dockerClient;
-    private final SandboxProperties sandboxProperties;
 
     @Autowired
-    public ContainerServiceImpl(DockerClient dockerClient, SandboxProperties sandboxProperties) {
+    public ContainerServiceImpl(DockerClient dockerClient) {
         this.dockerClient = dockerClient;
-        this.sandboxProperties = sandboxProperties;
     }
 
     @Override
@@ -55,14 +55,6 @@ public class ContainerServiceImpl implements ContainerService {
         ));
     }
 
-    @Override
-    public List<String> listStoppedContainers() {
-        return listContainers(List.of(
-                ContainerStatus.EXITED,
-                ContainerStatus.DEAD
-        ));
-    }
-
     private List<String> listContainers(List<ContainerStatus> statuses) {
         List<String> stringStatuses = statuses.stream()
                 .map(ContainerStatus::getValue)
@@ -76,8 +68,8 @@ public class ContainerServiceImpl implements ContainerService {
                     .map(Container::getId)
                     .collect(Collectors.toList());
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to list containers with statuses={}", stringStatuses, e);
-            throw new ContainerServiceException("Failed to list containers with statuses=" + stringStatuses, e);
+            LOGGER.error("Failed to list containers with statuses {}", stringStatuses, e);
+            throw new ContainerServiceException("Failed to list containers with statuses " + stringStatuses, e);
         }
     }
 
@@ -99,13 +91,13 @@ public class ContainerServiceImpl implements ContainerService {
                     .exec();
 
             String containerId = createContainerResponse.getId();
-            LOGGER.info("Created container id={}, name={}, mount={} from image {}",
-                    containerId, containerName, volumeBindDescriptor, sandboxImageName);
+            LOGGER.info("Created container {}, (name={}, image={}, volume={})",
+                    containerId, containerName, sandboxImageName, volumeBindDescriptor);
 
             return containerId;
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to create container with name={}", containerName, e);
-            throw new ContainerServiceException("Failed to create container with name= " + containerName, e);
+            LOGGER.error("Failed to create container with name {}", containerName, e);
+            throw new ContainerServiceException("Failed to create container with name " + containerName, e);
         }
     }
 
@@ -116,45 +108,38 @@ public class ContainerServiceImpl implements ContainerService {
     @Override
     public void startContainer(String containerId) {
         try {
-            LOGGER.info("Starting container with id={}", containerId);
             dockerClient.startContainerCmd(containerId).exec();
-            LOGGER.info("Container with with id={} started", containerId);
+            LOGGER.info("Started container {}", containerId);
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to start container with id={}", containerId, e);
-            throw new ContainerServiceException("Failed to start container with id=" + containerId, e);
+            LOGGER.error("Failed to start container {}", containerId, e);
+            throw new ContainerServiceException("Failed to start container " + containerId, e);
         }
     }
 
     @Override
     public boolean isRunning(String containerId) {
         try {
-            InspectContainerResponse inspectContainerResponse = dockerClient.inspectContainerCmd(containerId).exec();
+            InspectContainerResponse inspectContainerResponse = dockerClient.inspectContainerCmd(containerId)
+                    .exec();
             return Boolean.TRUE.equals(inspectContainerResponse.getState().getRunning());
-
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to check whether container with id={} is running", containerId, e);
-            throw new ContainerServiceException("Failed to check whether container with id=" + containerId + " is running", e);
+            LOGGER.error("Failed to check whether container {} is running", containerId, e);
+            throw new ContainerServiceException("Failed to check whether container " + containerId + " is running", e);
         }
     }
 
     @Override
-    public void stopContainer(String containerId) {
+    public void stopContainer(String containerId, boolean mustExist) {
         try {
-            LOGGER.info("Stopping container with id={}", containerId);
             dockerClient.stopContainerCmd(containerId).exec();
-            LOGGER.info("Container with with id={} stopped", containerId);
+            LOGGER.info("Stopped container {}", containerId);
+        } catch (NotModifiedException ignored) {
+            // already stopped
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to stop container with id={}", containerId, e);
-            throw new ContainerServiceException("Failed to stop container with id=" + containerId, e);
-        }
-    }
+            if (e instanceof NotFoundException && !mustExist) return;
 
-    @Override
-    public void stopContainers(List<String> containerIds) {
-        if (containerIds != null) {
-            for (String containerId : containerIds) {
-                this.stopContainer(containerId);
-            }
+            LOGGER.error("Failed to stop container {}", containerId, e);
+            throw new ContainerServiceException("Failed to stop container " + containerId, e);
         }
     }
 
@@ -182,11 +167,13 @@ public class ContainerServiceImpl implements ContainerService {
                     })
                     .awaitCompletion(timeoutMs, TimeUnit.MILLISECONDS);
 
+            LOGGER.info("Received logs for container {}", containerId);
             return String.join(System.lineSeparator(), logLines);
+
         } catch (RuntimeException | InterruptedException e) {
             String logsType = isStdout ? "STDOUT" : "STDERR";
-            LOGGER.error("Failed to get logs ({}) for container with id={}", logsType, containerId, e);
-            throw new ContainerServiceException("Failed to get logs ({" + logsType + "}) for container with id=" + containerId, e);
+            LOGGER.error("Failed to receive logs ({}) for container {}", logsType, containerId, e);
+            throw new ContainerServiceException("Failed to receive logs ({" + logsType + "}) for container " + containerId, e);
         }
     }
 
@@ -194,43 +181,28 @@ public class ContainerServiceImpl implements ContainerService {
     public Long getExitCode(String containerId) {
         try {
             InspectContainerResponse rs = dockerClient.inspectContainerCmd(containerId).exec();
+            LOGGER.error("Received exit code for container {}", containerId);
             return rs.getState().getExitCodeLong();
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to get container exit code with id={}", containerId, e);
-            throw new ContainerServiceException("Failed to get container exit code with id=" + containerId, e);
+            LOGGER.error("Failed to receive exit code for container {}", containerId, e);
+            throw new ContainerServiceException("Failed to receive exit code for container {}" + containerId, e);
         }
     }
 
     @Override
-    public void removeForcefullyContainer(String containerId) {
+    public void removeContainer(String containerId, boolean mustExist) {
         try {
-            LOGGER.info("Removing container with id={}", containerId);
             dockerClient.removeContainerCmd(containerId)
                     .withForce(true)
                     .exec();
 
-            LOGGER.info("Container with with id={} removed", containerId);
+            LOGGER.info("Removed container {}", containerId);
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to remove container with id={}", containerId, e);
-            throw new ContainerServiceException("Failed to remove container with id=" + containerId, e);
-        }
-    }
+            if (e instanceof NotFoundException && !mustExist) return;
 
-    @Override
-    public void removeForcefullyContainers(List<String> containerIds) {
-        if (containerIds != null) {
-            for (String containerId : containerIds) {
-                this.removeForcefullyContainer(containerId);
-            }
+            LOGGER.error("Failed to remove container {}", containerId, e);
+            throw new ContainerServiceException("Failed to remove container " + containerId, e);
         }
-    }
-
-    @Override
-    public void stopAndRemoveAllContainers() {
-        List<String> runningContainerIds = this.listRunningContainers();
-        List<String> allContainerIds = this.listAllContainers();
-        this.stopContainers(runningContainerIds);
-        this.removeForcefullyContainers(allContainerIds);
     }
 
     @PreDestroy

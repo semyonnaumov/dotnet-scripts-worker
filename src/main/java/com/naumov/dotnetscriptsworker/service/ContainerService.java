@@ -1,6 +1,5 @@
 package com.naumov.dotnetscriptsworker.service;
 
-import java.nio.file.Path;
 import java.util.List;
 
 public interface ContainerService {
@@ -8,8 +7,6 @@ public interface ContainerService {
     List<String> listAllContainers();
 
     List<String> listRunningContainers();
-
-    List<String> listStoppedContainers();
 
     String createContainer(String containerName,
                            String sandboxImageName,
@@ -21,9 +18,7 @@ public interface ContainerService {
 
     boolean isRunning(String containerId);
 
-    void stopContainer(String containerId);
-
-    void stopContainers(List<String> containerId);
+    void stopContainer(String containerId, boolean mustExist);
 
     String getStdout(String containerId, long timeoutMs);
 
@@ -31,9 +26,5 @@ public interface ContainerService {
 
     Long getExitCode(String containerId);
 
-    void removeForcefullyContainer(String containerId);
-
-    void removeForcefullyContainers(List<String> containerId);
-
-    void stopAndRemoveAllContainers();
+    void removeContainer(String containerId, boolean mustExist);
 }

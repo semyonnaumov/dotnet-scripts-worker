@@ -1,6 +1,6 @@
 package com.naumov.dotnetscriptsworker.util;
 
-public class Timer {
+public final class Timer {
     private final long durationMs;
     private long endTimeMs;
 

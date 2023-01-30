@@ -15,6 +15,7 @@ public class JobResults {
     public enum Status {
         SUCCEEDED,
         FAILED,
-        TIME_LIMIT_EXCEEDED
+        TIME_LIMIT_EXCEEDED,
+        REJECTED
     }
 }

@@ -4,8 +4,8 @@ worker:
     platform: dotnet-7
     worker-type: ${worker.sandbox.os}-${worker.sandbox.platform}
     max-concurrent-sandboxes: 2
-    sandbox-init-timeout-ms: 60000
-    job-timeout-ms: 120000
+    container-operations-timeout-ms: 60000 # 1 min
+    job-timeout-ms: 120000 # 2 min
     sandbox-image: sandbox:${worker.sandbox.worker-type}
     sandbox-container-prefix: job-
     script-file-name: main.csx # todo add env to dockerfile?
