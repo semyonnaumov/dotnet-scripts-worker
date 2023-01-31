@@ -57,6 +57,14 @@ public class SandboxContainerProperties {
     private Integer cpuShares;
 
     /**
+     * Docker "--pids-limit" option
+     */
+    @NotNull
+    @Min(1)
+    @Max(100)
+    private Long pidsLimit;
+
+    /**
      * Docker "--blkio-weight" option
      */
     @NotNull

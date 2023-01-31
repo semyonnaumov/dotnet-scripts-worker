@@ -84,6 +84,7 @@ public class ContainerServiceImpl implements ContainerService {
                     .withCpuPeriod(sandboxContainerProperties.getCpuPeriodMicros())
                     .withCpuQuota(sandboxContainerProperties.getCpuQuotaMicros())
                     .withCpuShares(sandboxContainerProperties.getCpuShares())
+                    .withPidsLimit(sandboxContainerProperties.getPidsLimit())
                     .withBlkioWeight(sandboxContainerProperties.getBlkioWeight())
                     // TODO not working:
                     //  com.github.dockerjava.api.exception.InternalServerErrorException: Status 500: {"message":"--storage-opt is supported only for overlay over xfs with 'pquota' mount option"}

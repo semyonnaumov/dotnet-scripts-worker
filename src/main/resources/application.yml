@@ -15,6 +15,7 @@ worker:
       cpu-period-micros: 100000
       cpu-quota-micros: 50000
       cpu-shares: 512
+      pids-limit: 50
       blkio-weight: 400
       storage-size: 5G # currently not supported
   docker-client:
