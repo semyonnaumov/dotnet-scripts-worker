@@ -48,10 +48,10 @@ public class JobServiceImpl implements JobService {
         try {
             LOGGER.info("{} initialization: starting container environment cleanup",
                     JobServiceImpl.class.getSimpleName());
-            List<String> allContainers = containerService.listAllContainers();
-            for (String containerId : allContainers) {
-                // TODO this kills all the containers (even kafka) when testing on local machine
-//                containerService.removeContainer(containerId, false);
+            String prefix = sandboxProperties.getSandboxContainerPrefix();
+            List<String> containers = containerService.getAllContainersIdsWithNamePrefix(prefix);
+            for (String containerId : containers) {
+                containerService.removeContainer(containerId, false);
             }
             LOGGER.info("{} initialization: finished container environment cleanup",
                     JobServiceImpl.class.getSimpleName());

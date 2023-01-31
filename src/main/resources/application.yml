@@ -1,17 +1,17 @@
 worker:
   sandbox:
     worker-type: linux-amd64-dotnet-7
-    max-concurrent-sandboxes: 8
+    max-concurrent-sandboxes: 2
     container-operations-timeout-ms: 60000 # 1 min
     job-timeout-ms: 120000 # 2 min
     sandbox-image: sandbox:${worker.sandbox.worker-type}
-    sandbox-container-prefix: job-
-    script-file-name: main.csx # todo add env to dockerfile?
+    sandbox-container-prefix: sandbox-job-
 #    script-files-on-host-dir: /tmp/scripts # Application folder to write script files to
-    script-files-on-host-dir: /Users/snaumov/Desktop/scripts # Application folder to write script files to
+    script-files-on-host-dir: /Users/snaumov/Desktop/scripts # TODO change
     script-file-in-container-dir: /tmp/script # DinD container script file location
+    script-file-name: main.csx
   docker-client:
-    docker-host: unix:/var/run/docker.sock # or tcp://localhost:2376
+    docker-host: unix:/var/run/docker.sock # or just tcp://localhost:2376
     docker-tls-verify: false
     docker-cert-path: /Users/snaumov/.docker
     registry-user: registryUser
@@ -19,13 +19,24 @@ worker:
     registry-email: registryMail
     registry-url: registryUrl
   kafka:
-    broker-url: localhost:9092
+    broker-url: localhost:8097
+    reconnect-backoff-ms: 100
+    reconnect-backoff-max-ms: 10000
     jobs-topic-name: pending-${worker.sandbox.worker-type}
     running-topic-name: running
     finished-topic-name: finished
     producer-acks: 1
     consumer-concurrency: ${worker.sandbox.max-concurrent-sandboxes}
     consumer-group: workers.${worker.sandbox.worker-type}
+  kafka-admin:
+    broker-url: ${worker.kafka.broker-url}
+    replication-factor: 2
+    jobs-topic-name: ${worker.kafka.jobs-topic-name}
+    jobs-topic-partitions: 2
+    running-topic-name: ${worker.kafka.running-topic-name}
+    running-topic-partitions: 2
+    finished-topic-name: ${worker.kafka.finished-topic-name}
+    finished-topic-partitions: 2
 
 logging:
   level:

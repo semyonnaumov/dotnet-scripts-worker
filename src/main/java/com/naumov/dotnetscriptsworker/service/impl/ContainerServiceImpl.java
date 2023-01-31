@@ -20,9 +20,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Service
 public class ContainerServiceImpl implements ContainerService {
@@ -35,40 +36,32 @@ public class ContainerServiceImpl implements ContainerService {
     }
 
     @Override
-    public List<String> listAllContainers() {
-        return listContainers(List.of(
-                ContainerStatus.CREATED,
-                ContainerStatus.RUNNING,
-                ContainerStatus.PAUSED,
-                ContainerStatus.RESTARTING,
-                ContainerStatus.REMOVING,
-                ContainerStatus.EXITED,
-                ContainerStatus.DEAD
-        ));
+    public List<String> getAllContainersIds() {
+        return getAllContainers().stream()
+                .map(Container::getId)
+                .toList();
     }
 
     @Override
-    public List<String> listRunningContainers() {
-        return listContainers(List.of(
-                ContainerStatus.RUNNING
-        ));
+    public List<String> getAllContainersIdsWithNamePrefix(String namePrefix) {
+        Objects.requireNonNull(namePrefix, "Parameter namePrefix must not nbe null");
+        return getAllContainers().stream()
+                .filter(c -> {
+                    if (c.getNames() == null) return false;
+                    return Arrays.stream(c.getNames())
+                            .filter(Objects::nonNull)
+                            .anyMatch(n -> n.startsWith(namePrefix));
+                })
+                .map(Container::getId)
+                .toList();
     }
 
-    private List<String> listContainers(List<ContainerStatus> statuses) {
-        List<String> stringStatuses = statuses.stream()
-                .map(ContainerStatus::getValue)
-                .toList();
+    private List<Container> getAllContainers() {
         try {
-            List<Container> containerList = dockerClient.listContainersCmd()
-                    .withStatusFilter(stringStatuses)
-                    .exec();
-
-            return containerList.stream()
-                    .map(Container::getId)
-                    .collect(Collectors.toList());
+            return dockerClient.listContainersCmd().exec();
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to list containers with statuses {}", stringStatuses, e);
-            throw new ContainerServiceException("Failed to list containers with statuses " + stringStatuses, e);
+            LOGGER.error("Failed to get all containers", e);
+            throw new ContainerServiceException("Failed to get all containers", e);
         }
     }
 

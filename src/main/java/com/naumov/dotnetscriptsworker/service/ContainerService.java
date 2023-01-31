@@ -4,9 +4,9 @@ import java.util.List;
 
 public interface ContainerService {
 
-    List<String> listAllContainers();
+    List<String> getAllContainersIds();
 
-    List<String> listRunningContainers();
+    List<String> getAllContainersIdsWithNamePrefix(String prefix);
 
     String createContainer(String containerName,
                            String sandboxImageName,

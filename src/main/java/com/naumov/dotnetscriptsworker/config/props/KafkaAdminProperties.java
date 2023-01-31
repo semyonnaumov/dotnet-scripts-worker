@@ -10,28 +10,27 @@ import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
-@ConfigurationProperties("worker.kafka")
+@ConfigurationProperties("worker.kafka-admin")
 @Component
-public class KafkaProperties {
+public class KafkaAdminProperties {
     @NotBlank
     private String brokerUrl;
     @NotNull
     @Min(1)
-    private Integer reconnectBackoffMs;
-    @NotNull
-    @Min(1)
-    private Integer reconnectBackoffMaxMs;
+    private Short replicationFactor;
     @NotBlank
     private String jobsTopicName;
-    @NotBlank
-    private String runningTopicName;
-    @NotBlank
-    private String finishedTopicName;
-    @NotBlank
-    private String consumerGroup;
     @NotNull
     @Min(1)
-    private Integer consumerConcurrency;
+    private Integer jobsTopicPartitions;
     @NotBlank
-    private String producerAcks;
+    private String runningTopicName;
+    @NotNull
+    @Min(1)
+    private Integer runningTopicPartitions;
+    @NotBlank
+    private String finishedTopicName;
+    @NotNull
+    @Min(1)
+    private Integer finishedTopicPartitions;
 }
