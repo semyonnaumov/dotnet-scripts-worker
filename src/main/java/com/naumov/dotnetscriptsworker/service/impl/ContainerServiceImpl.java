@@ -10,6 +10,7 @@ import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
+import com.naumov.dotnetscriptsworker.config.props.SandboxContainerProperties;
 import com.naumov.dotnetscriptsworker.service.ContainerService;
 import com.naumov.dotnetscriptsworker.service.exception.ContainerServiceException;
 import jakarta.annotation.PreDestroy;
@@ -19,20 +20,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class ContainerServiceImpl implements ContainerService {
     private static final Logger LOGGER = LogManager.getLogger(ContainerServiceImpl.class);
+    private static final long MEGABYTE_MULTIPLIER = 1024 * 1024;
+    private static final String NO_NEW_PRIVILEGES_SECURITY_OPT = "no-new-privileges";
+    private static final String STORAGE_OPT_SIZE = "size";
     private final DockerClient dockerClient;
+    private final SandboxContainerProperties sandboxContainerProperties;
 
     @Autowired
-    public ContainerServiceImpl(DockerClient dockerClient) {
+    public ContainerServiceImpl(DockerClient dockerClient,
+                                SandboxContainerProperties sandboxContainerProperties) {
         this.dockerClient = dockerClient;
+        this.sandboxContainerProperties = sandboxContainerProperties;
     }
 
     @Override
@@ -74,7 +78,17 @@ public class ContainerServiceImpl implements ContainerService {
         try {
             String volumeBindDescriptor = getVolumeBindDescriptor(volumeSrcPath, volumeDestPath);
             HostConfig hostConfig = HostConfig.newHostConfig()
-                    .withBinds(Bind.parse(volumeBindDescriptor));
+                    .withBinds(Bind.parse(volumeBindDescriptor))
+                    .withMemory(sandboxContainerProperties.getMemoryMb() * MEGABYTE_MULTIPLIER)
+                    .withMemoryReservation(sandboxContainerProperties.getMemoryReservationMb() * MEGABYTE_MULTIPLIER)
+                    .withCpuPeriod(sandboxContainerProperties.getCpuPeriodMicros())
+                    .withCpuQuota(sandboxContainerProperties.getCpuQuotaMicros())
+                    .withCpuShares(sandboxContainerProperties.getCpuShares())
+                    .withBlkioWeight(sandboxContainerProperties.getBlkioWeight())
+                    // TODO not working:
+                    //  com.github.dockerjava.api.exception.InternalServerErrorException: Status 500: {"message":"--storage-opt is supported only for overlay over xfs with 'pquota' mount option"}
+//                    .withStorageOpt(Collections.singletonMap(STORAGE_OPT_SIZE, sandboxContainerProperties.getStorageSize()))
+                    .withSecurityOpts(List.of(NO_NEW_PRIVILEGES_SECURITY_OPT));
 
             CreateContainerResponse createContainerResponse = dockerClient.createContainerCmd(sandboxImageName)
                     .withEntrypoint("dotnet-script", volumeDestPath + "/" + scriptFileName, "-c", "release")

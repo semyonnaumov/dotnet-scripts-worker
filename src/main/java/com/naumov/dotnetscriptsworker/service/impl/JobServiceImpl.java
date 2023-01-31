@@ -1,5 +1,6 @@
 package com.naumov.dotnetscriptsworker.service.impl;
 
+import com.naumov.dotnetscriptsworker.config.props.SandboxContainerProperties;
 import com.naumov.dotnetscriptsworker.config.props.SandboxProperties;
 import com.naumov.dotnetscriptsworker.kafka.JobStatusProducer;
 import com.naumov.dotnetscriptsworker.model.JobResults;
@@ -28,6 +29,7 @@ public class JobServiceImpl implements JobService {
     private final JobFilesService jobFilesService;
     private final JobStatusProducer jobStatusProducer;
     private final SandboxProperties sandboxProperties;
+    private final SandboxContainerProperties sandboxContainerProperties;
     private final ContainerizedJobsPool containerizedJobsPool;
 
     @Autowired
@@ -35,11 +37,13 @@ public class JobServiceImpl implements JobService {
                           JobFilesService jobFilesService,
                           JobStatusProducer jobStatusProducer,
                           SandboxProperties sandboxProperties,
+                          SandboxContainerProperties sandboxContainerProperties,
                           ContainerizedJobsPool containerizedJobsPool) {
         this.containerService = containerService;
         this.jobFilesService = jobFilesService;
         this.jobStatusProducer = jobStatusProducer;
         this.sandboxProperties = sandboxProperties;
+        this.sandboxContainerProperties = sandboxContainerProperties;
         this.containerizedJobsPool = containerizedJobsPool;
     }
 
@@ -48,7 +52,7 @@ public class JobServiceImpl implements JobService {
         try {
             LOGGER.info("{} initialization: starting container environment cleanup",
                     JobServiceImpl.class.getSimpleName());
-            String prefix = sandboxProperties.getContainerNamePrefix();
+            String prefix = sandboxContainerProperties.getNamePrefix();
             List<String> containers = containerService.getAllContainersIdsWithNamePrefix(prefix);
             for (String containerId : containers) {
                 containerService.removeContainer(containerId, false);
@@ -106,14 +110,14 @@ public class JobServiceImpl implements JobService {
     }
 
     private String startJobContainer(String jobId, String jobTempDirPath) {
-        String containerName = sandboxProperties.getContainerNamePrefix() + jobId;
+        String containerName = sandboxContainerProperties.getNamePrefix() + jobId;
         try {
             String containerId = containerService.createContainer(
                     containerName,
-                    sandboxProperties.getContainerImage(),
+                    sandboxContainerProperties.getImage(),
                     jobTempDirPath,
                     sandboxProperties.getJobFilesContainerDir(),
-                    sandboxProperties.getScriptFileName()
+                    sandboxProperties.getJobScriptFileName()
             );
 
             containerService.startContainer(containerId);

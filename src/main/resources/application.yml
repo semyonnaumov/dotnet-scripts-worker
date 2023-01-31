@@ -1,14 +1,22 @@
 worker:
   sandbox:
     runner-type: linux-amd64-dotnet-7
-    max-containers: 2
     container-operations-timeout-ms: 60000 # 1 min
     job-timeout-ms: 120000 # 2 min
-    container-image: sandbox:${worker.sandbox.runner-type}
-    container-name-prefix: sandbox-job-
     job-files-host-dir: /Users/snaumov/Desktop/scripts # TODO change to /tmp/scripts in Dockerfile
     job-files-container-dir: /tmp/script # DinD container script file location
-    script-file-name: main.csx
+    job-script-file-name: main.csx
+    max-containers: 2
+    container:
+      image: sandbox:${worker.sandbox.runner-type}
+      name-prefix: sandbox-job-
+      memory-mb: 1024
+      memory-reservation-mb: 256
+      cpu-period-micros: 100000
+      cpu-quota-micros: 50000
+      cpu-shares: 512
+      blkio-weight: 400
+      storage-size: 5G # currently not supported
   docker-client:
     docker-host: unix:/var/run/docker.sock # or just tcp://localhost:2376
     docker-tls-verify: false

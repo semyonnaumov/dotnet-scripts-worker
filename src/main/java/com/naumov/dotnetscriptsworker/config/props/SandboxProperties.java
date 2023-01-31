@@ -16,22 +16,18 @@ public class SandboxProperties {
     @NotBlank
     private String runnerType;
     @NotNull
-    @Min(1)
-    private Integer maxContainers;
-    @NotNull
     @Min(100)
     private Long containerOperationsTimeoutMs;
     @NotNull
     @Min(1000)
     private Long jobTimeoutMs;
     @NotBlank
-    private String containerImage;
-    @NotBlank
-    private String containerNamePrefix;
-    @NotBlank
-    private String scriptFileName;
-    @NotBlank
     private String jobFilesHostDir;
     @NotBlank
     private String jobFilesContainerDir;
+    @NotBlank
+    private String jobScriptFileName;
+    @NotNull
+    @Min(1)
+    private Integer maxContainers;
 }

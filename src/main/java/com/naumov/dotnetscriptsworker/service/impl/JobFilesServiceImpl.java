@@ -32,7 +32,7 @@ public class JobFilesServiceImpl implements JobFilesService {
         String jobId = jobTask.getJobId();
         try {
             Path tempDirPath = getJobTempDirectoryPath(jobId);
-            Path scriptFilePath = getJobTempDirectoryFilePath(jobId, sandboxProperties.getScriptFileName());
+            Path scriptFilePath = getJobTempDirectoryFilePath(jobId, sandboxProperties.getJobScriptFileName());
             Path nugetConfigFilePath = getJobTempDirectoryFilePath(jobId, "NuGet.Config");
 
             Files.createDirectories(tempDirPath);
