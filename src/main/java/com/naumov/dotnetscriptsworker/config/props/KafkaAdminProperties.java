@@ -17,6 +17,12 @@ public class KafkaAdminProperties {
     private String brokerUrl;
     @NotNull
     @Min(1)
+    private Integer reconnectBackoffMs;
+    @NotNull
+    @Min(1)
+    private Integer reconnectBackoffMaxMs;
+    @NotNull
+    @Min(1)
     private Short replicationFactor;
     @NotBlank
     private String jobsTopicName;

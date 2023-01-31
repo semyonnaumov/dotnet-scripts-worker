@@ -18,7 +18,7 @@ public final class ContainerizedJobsPoolImpl implements ContainerizedJobsPool {
 
     @Autowired
     public ContainerizedJobsPoolImpl(SandboxProperties sandboxProperties) {
-        this.maxCapacity = sandboxProperties.getMaxConcurrentSandboxes();
+        this.maxCapacity = sandboxProperties.getMaxContainers();
     }
 
     @Override

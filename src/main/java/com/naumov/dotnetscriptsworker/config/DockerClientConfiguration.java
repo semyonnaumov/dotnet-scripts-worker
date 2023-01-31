@@ -15,36 +15,35 @@ import java.time.Duration;
 
 @Configuration
 public class DockerClientConfiguration {
-    private final DockerClientProperties props;
+    private final DockerClientProperties dockerClientProperties;
 
     @Autowired
-    public DockerClientConfiguration(DockerClientProperties props) {
-        this.props = props;
+    public DockerClientConfiguration(DockerClientProperties dockerClientProperties) {
+        this.dockerClientProperties = dockerClientProperties;
     }
 
     @Bean
     public DockerClientConfig dockerClientConfig() {
         return DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withDockerHost(props.getDockerHost())
-                .withDockerTlsVerify(props.getDockerTlsVerify())
-                .withDockerCertPath(props.getDockerCertPath())
-                .withRegistryUsername(props.getRegistryUser())
-                .withRegistryPassword(props.getRegistryPassword())
-                .withRegistryEmail(props.getRegistryEmail())
-                .withRegistryUrl(props.getRegistryUrl())
+                .withDockerHost(dockerClientProperties.getDockerHost())
+                .withDockerTlsVerify(dockerClientProperties.getDockerTlsVerify())
+                .withDockerCertPath(dockerClientProperties.getDockerCertPath())
+                .withRegistryUsername(dockerClientProperties.getRegistryUser())
+                .withRegistryPassword(dockerClientProperties.getRegistryPassword())
+                .withRegistryEmail(dockerClientProperties.getRegistryEmail())
+                .withRegistryUrl(dockerClientProperties.getRegistryUrl())
                 .build();
     }
 
-    // TODO move connection params to properties
     @Bean
     public DockerHttpClient dockerHttpClient() {
         DockerClientConfig config = dockerClientConfig();
         return new ApacheDockerHttpClient.Builder()
                 .dockerHost(config.getDockerHost())
                 .sslConfig(config.getSSLConfig())
-                .maxConnections(100)
-                .connectionTimeout(Duration.ofSeconds(30))
-                .responseTimeout(Duration.ofSeconds(45))
+                .maxConnections(dockerClientProperties.getMaxConnections())
+                .connectionTimeout(Duration.ofSeconds(dockerClientProperties.getConnectionTimeoutSec()))
+                .responseTimeout(Duration.ofSeconds(dockerClientProperties.getResponseTimeoutSec()))
                 .build();
     }
 

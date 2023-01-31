@@ -14,24 +14,24 @@ import org.springframework.validation.annotation.Validated;
 @Component
 public class SandboxProperties {
     @NotBlank
-    private String workerType;
+    private String runnerType;
     @NotNull
     @Min(1)
-    private Integer maxConcurrentSandboxes;
+    private Integer maxContainers;
     @NotNull
-    @Min(1)
+    @Min(100)
     private Long containerOperationsTimeoutMs;
     @NotNull
-    @Min(1)
+    @Min(1000)
     private Long jobTimeoutMs;
     @NotBlank
-    private String sandboxImage;
+    private String containerImage;
     @NotBlank
-    private String sandboxContainerPrefix;
+    private String containerNamePrefix;
     @NotBlank
     private String scriptFileName;
     @NotBlank
-    private String scriptFilesOnHostDir;
+    private String jobFilesHostDir;
     @NotBlank
-    private String scriptFileInContainerDir;
+    private String jobFilesContainerDir;
 }

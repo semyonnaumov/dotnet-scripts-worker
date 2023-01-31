@@ -48,7 +48,7 @@ public class JobServiceImpl implements JobService {
         try {
             LOGGER.info("{} initialization: starting container environment cleanup",
                     JobServiceImpl.class.getSimpleName());
-            String prefix = sandboxProperties.getSandboxContainerPrefix();
+            String prefix = sandboxProperties.getContainerNamePrefix();
             List<String> containers = containerService.getAllContainersIdsWithNamePrefix(prefix);
             for (String containerId : containers) {
                 containerService.removeContainer(containerId, false);
@@ -106,13 +106,13 @@ public class JobServiceImpl implements JobService {
     }
 
     private String startJobContainer(String jobId, String jobTempDirPath) {
-        String containerName = sandboxProperties.getSandboxContainerPrefix() + jobId;
+        String containerName = sandboxProperties.getContainerNamePrefix() + jobId;
         try {
             String containerId = containerService.createContainer(
                     containerName,
-                    sandboxProperties.getSandboxImage(),
+                    sandboxProperties.getContainerImage(),
                     jobTempDirPath,
-                    sandboxProperties.getScriptFileInContainerDir(),
+                    sandboxProperties.getJobFilesContainerDir(),
                     sandboxProperties.getScriptFileName()
             );
 

@@ -24,6 +24,9 @@ public class KafkaAdminConfig {
     public KafkaAdmin kafkaAdmin() {
         Map<String, Object> props = new HashMap<>();
         props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaAdminProperties.getBrokerUrl());
+        props.put(AdminClientConfig.RECONNECT_BACKOFF_MS_CONFIG, kafkaAdminProperties.getReconnectBackoffMs());
+        props.put(AdminClientConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG, kafkaAdminProperties.getReconnectBackoffMaxMs());
+        props.put(AdminClientConfig.RETRIES_CONFIG, kafkaAdminProperties.getReconnectBackoffMaxMs());
         return new KafkaAdmin(props);
     }
 

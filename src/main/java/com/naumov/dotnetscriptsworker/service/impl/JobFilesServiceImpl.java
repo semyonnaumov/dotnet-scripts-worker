@@ -71,12 +71,12 @@ public class JobFilesServiceImpl implements JobFilesService {
     }
 
     private Path getJobTempDirectoryPath(String jobId) {
-        return Paths.get(sandboxProperties.getScriptFilesOnHostDir(), jobId)
+        return Paths.get(sandboxProperties.getJobFilesHostDir(), jobId)
                 .toAbsolutePath();
     }
 
     private Path getJobTempDirectoryFilePath(String jobId, String fileName) {
-        return Paths.get(sandboxProperties.getScriptFilesOnHostDir(), jobId, fileName)
+        return Paths.get(sandboxProperties.getJobFilesHostDir(), jobId, fileName)
                 .toAbsolutePath();
     }
 }
