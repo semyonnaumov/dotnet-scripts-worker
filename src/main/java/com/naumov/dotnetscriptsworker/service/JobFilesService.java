@@ -1,14 +1,10 @@
 package com.naumov.dotnetscriptsworker.service;
 
-import java.nio.file.Path;
+import com.naumov.dotnetscriptsworker.model.JobTask;
 
 public interface JobFilesService {
 
-    void prepareJobFiles(String jobId, String script);
+    String prepareJobFiles(JobTask jobTask);
 
     void cleanupJobFiles(String jobId);
-
-    Path getTempJobScriptDirectoryPath(String jobId);
-
-    Path getTempJobScriptFilePath(String jobId);
 }

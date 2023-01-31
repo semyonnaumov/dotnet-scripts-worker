@@ -87,9 +87,9 @@ public class JobServiceImpl implements JobService {
         LOGGER.debug("Allocated container slot for {}", jobId);
 
         try {
-            jobFilesService.prepareJobFiles(jobId, jobTask.getJobScript());
+            String jobTempDirPath = jobFilesService.prepareJobFiles(jobTask);
 
-            String containerId = startJobContainer(jobId);
+            String containerId = startJobContainer(jobId, jobTempDirPath);
             containerizedJob.setContainerId(containerId);
             jobStatusProducer.reportJobStartedAsync(jobId);
 
@@ -105,14 +105,13 @@ public class JobServiceImpl implements JobService {
         }
     }
 
-    private String startJobContainer(String jobId) {
+    private String startJobContainer(String jobId, String jobTempDirPath) {
         String containerName = sandboxProperties.getSandboxContainerPrefix() + jobId;
         try {
-            String tempDirPath = jobFilesService.getTempJobScriptDirectoryPath(jobId).toString();
             String containerId = containerService.createContainer(
                     containerName,
                     sandboxProperties.getSandboxImage(),
-                    tempDirPath,
+                    jobTempDirPath,
                     sandboxProperties.getScriptFileInContainerDir(),
                     sandboxProperties.getScriptFileName()
             );
@@ -140,7 +139,8 @@ public class JobServiceImpl implements JobService {
                 completionStatus = containerService.getExitCode(containerId) == 0
                         ? JobResults.ScriptResults.Status.SUCCEEDED
                         : JobResults.ScriptResults.Status.FAILED;
-                LOGGER.info("Job {} finished in time, container {} stopped", jobId, containerId);
+                LOGGER.info("Job {} finished in time with status {}, container {} stopped",
+                        jobId, completionStatus, containerId);
             } else {
                 LOGGER.info("Job {} exceeded time limit, container {} will be stopped", jobId, containerId);
                 completionStatus = JobResults.ScriptResults.Status.TIME_LIMIT_EXCEEDED;

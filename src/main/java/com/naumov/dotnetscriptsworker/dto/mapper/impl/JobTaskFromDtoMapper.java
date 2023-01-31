@@ -5,8 +5,6 @@ import com.naumov.dotnetscriptsworker.dto.mapper.DtoMapper;
 import com.naumov.dotnetscriptsworker.model.JobTask;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 @Component
@@ -17,13 +15,15 @@ public class JobTaskFromDtoMapper implements DtoMapper<JobTaskDto, JobTask> {
         Objects.requireNonNull(jobTaskDto, "Parameter jobTaskDto must not be null");
         JobTask jobTask = new JobTask(jobTaskDto.getJobId());
         jobTask.setJobScript(jobTaskDto.getScript());
-        Map<String, String> dtoJobConfig = jobTaskDto.getJobConfig();
-        if (dtoJobConfig != null) {
-            HashMap<String, String> jobConfigs = new HashMap<>();
-            dtoJobConfig.putAll(jobConfigs);
-            jobTask.setJobConfig(jobConfigs);
-        }
+        jobTask.setJobConfig(mapJobConfig(jobTaskDto.getJobConfig()));
 
         return jobTask;
+    }
+
+    private JobTask.JobConfig mapJobConfig(JobTaskDto.JobConfigDto jobConfigDto) {
+        if (jobConfigDto == null) return null;
+        JobTask.JobConfig jobConfig = new JobTask.JobConfig();
+        jobConfig.setNugetConfig(jobConfigDto.getNugetConfig());
+        return jobConfig;
     }
 }
