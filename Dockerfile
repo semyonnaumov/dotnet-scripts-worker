@@ -7,8 +7,8 @@ WORKDIR /workspace/app
 
 COPY gradle gradle
 COPY gradlew .
-COPY build.gradle .
 COPY settings.gradle .
+COPY build.gradle .
 COPY src src
 
 RUN ./gradlew clean build
@@ -16,12 +16,18 @@ RUN mkdir -p build/dependency && (cd build/dependency; jar -xf ../libs/*.jar)
 
 
 ##################################################################
-######################## TARGET STAGE ############################
+######################### FINAL STAGE ############################
 ##################################################################
-FROM eclipse-temurin:17-jdk-alpine
+FROM docker:20-dind as final
+
+# Install JDK
+RUN apk --no-cache add openjdk17 \
+    --repository="https://dl-cdn.alpinelinux.org/alpine/edge/community" && \
+    java --version
 
 ARG DEPENDENCY=/workspace/app/build/dependency
 
+# Copy app
 COPY --from=builder ${DEPENDENCY}/BOOT-INF/lib /app/lib
 COPY --from=builder ${DEPENDENCY}/META-INF /app/META-INF
 COPY --from=builder ${DEPENDENCY}/BOOT-INF/classes /app
@@ -29,9 +35,9 @@ COPY --from=builder ${DEPENDENCY}/BOOT-INF/classes /app
 # Copy launcher
 COPY --chown=root docker /app
 
-# Env variables for launcher
+# Env variables for java launcher
 ENV     CPU_CORES 4
 ENV     JAVA_XMS 256m
 ENV     JAVA_XMX 4G
 
-CMD ["/app/run.sh"]
+ENTRYPOINT ["/app/run.sh"]

@@ -3,7 +3,8 @@ worker:
     runner-type: linux-amd64-dotnet-7
     container-operations-timeout-ms: 60000 # 1 min
     job-timeout-ms: 120000 # 2 min
-    job-files-host-dir: /Users/snaumov/Desktop/scripts # TODO change to /tmp/scripts in Dockerfile
+#    job-files-host-dir: /Users/snaumov/Desktop/scripts # TODO change to /tmp/scripts in Dockerfile
+    job-files-host-dir: /tmp/scripts
     job-files-container-dir: /tmp/script # DinD container script file location
     job-script-file-name: main.csx
     max-containers: 2
@@ -19,7 +20,8 @@ worker:
       blkio-weight: 400
       storage-size: 5G # currently not supported
   docker-client:
-    docker-host: unix:/var/run/docker.sock # or just tcp://localhost:2376
+    docker-host: unix:/var/run/docker.sock # for local testing
+#    docker-host: tcp://localhost:12376 # for docker-compose
     docker-tls-verify: false
     docker-cert-path: /Users/snaumov/.docker
     registry-url: registryUrl
