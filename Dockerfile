@@ -35,6 +35,9 @@ COPY --from=builder ${DEPENDENCY}/BOOT-INF/classes /app
 # Copy launcher
 COPY --chown=root docker /app
 
+RUN ["chmod", "+x", "/app/run.sh"]
+RUN ["chmod", "+x", "/app/run-java.sh"]
+
 # Env variables for java launcher
 ENV     CPU_CORES 4
 ENV     JAVA_XMS 256m

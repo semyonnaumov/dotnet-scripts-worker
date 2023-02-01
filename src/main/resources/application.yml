@@ -32,7 +32,8 @@ worker:
     connection-timeout-sec: 30
     response-timeout-sec: 45
   kafka:
-    broker-url: localhost:8097
+    broker-url: kafka-broker-1:9092
+#    broker-url: localhost:8097
     reconnect-backoff-ms: 100
     reconnect-backoff-max-ms: 10000
     jobs-topic-name: pending-${worker.sandbox.runner-type}
