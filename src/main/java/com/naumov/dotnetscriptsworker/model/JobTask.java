@@ -11,6 +11,6 @@ public class JobTask {
 
     @Data
     public static class JobConfig {
-        private String nugetConfig;
+        private String nugetConfigXml;
     }
 }

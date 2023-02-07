@@ -1,7 +1,7 @@
 package com.naumov.dotnetscriptsworker.kafka;
 
 import com.naumov.dotnetscriptsworker.config.props.KafkaProperties;
-import com.naumov.dotnetscriptsworker.dto.JobTaskDto;
+import com.naumov.dotnetscriptsworker.dto.cons.JobTaskMessage;
 import com.naumov.dotnetscriptsworker.dto.mapper.impl.JobTaskFromDtoMapper;
 import com.naumov.dotnetscriptsworker.model.JobTask;
 import com.naumov.dotnetscriptsworker.service.JobService;
@@ -37,17 +37,17 @@ public class JobTaskConsumer {
             containerFactory = "kafkaListenerContainerFactory"
 //            errorHandler = "kafkaListenerErrorHandler"
     )
-    public void processJobTask(JobTaskDto jobTaskDto, Acknowledgment ack) {
-        JobTask jobTask = jobTaskFromDtoMapper.map(jobTaskDto);
+    public void processJobTask(JobTaskMessage jobTaskMessage, Acknowledgment ack) {
+        JobTask jobTask = jobTaskFromDtoMapper.map(jobTaskMessage);
         String messageId = UUID.randomUUID().toString();
         jobTask.setMessageId(messageId);
         ack.acknowledge();
 
-        LOGGER.info("Received job task {} (message {})", jobTaskDto.getJobId(), messageId);
+        LOGGER.info("Received job task {} (message {})", jobTaskMessage.getJobId(), messageId);
         try {
             jobService.runJob(jobTask);
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to run job for job task {} (message {})", jobTaskDto.getJobId(), messageId);
+            LOGGER.error("Failed to run job for job task {} (message {})", jobTaskMessage.getJobId(), messageId);
             throw e;
         }
     }

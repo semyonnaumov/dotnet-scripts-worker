@@ -1,8 +1,8 @@
 package com.naumov.dotnetscriptsworker.config;
 
 import com.naumov.dotnetscriptsworker.config.props.KafkaProperties;
-import com.naumov.dotnetscriptsworker.dto.JobFinishedDto;
-import com.naumov.dotnetscriptsworker.dto.JobStartedDto;
+import com.naumov.dotnetscriptsworker.dto.prod.JobFinishedMessage;
+import com.naumov.dotnetscriptsworker.dto.prod.JobStartedMessage;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,28 +41,28 @@ public class KafkaProducersConfiguration {
     }
 
     @Bean
-    public ProducerFactory<String, JobStartedDto> jobStartedMessagesProducerFactory() {
-        var producerFactory = new DefaultKafkaProducerFactory<String, JobStartedDto>(commonKafkaProducerProperties());
+    public ProducerFactory<String, JobStartedMessage> jobStartedMessagesProducerFactory() {
+        var producerFactory = new DefaultKafkaProducerFactory<String, JobStartedMessage>(commonKafkaProducerProperties());
         producerFactory.setProducerPerThread(true);
 
         return producerFactory;
     }
 
     @Bean
-    public ProducerFactory<String, JobFinishedDto> jobFinishedMessagesProducerFactory() {
-        var producerFactory = new DefaultKafkaProducerFactory<String, JobFinishedDto>(commonKafkaProducerProperties());
+    public ProducerFactory<String, JobFinishedMessage> jobFinishedMessagesProducerFactory() {
+        var producerFactory = new DefaultKafkaProducerFactory<String, JobFinishedMessage>(commonKafkaProducerProperties());
         producerFactory.setProducerPerThread(true);
 
         return producerFactory;
     }
 
     @Bean
-    public KafkaTemplate<String, JobStartedDto> jobStartedMessagesKafkaTemplate() {
+    public KafkaTemplate<String, JobStartedMessage> jobStartedMessagesKafkaTemplate() {
         return new KafkaTemplate<>(jobStartedMessagesProducerFactory());
     }
 
     @Bean
-    public KafkaTemplate<String, JobFinishedDto> jobFinishedMessagesKafkaTemplate() {
+    public KafkaTemplate<String, JobFinishedMessage> jobFinishedMessagesKafkaTemplate() {
         return new KafkaTemplate<>(jobFinishedMessagesProducerFactory());
     }
 }

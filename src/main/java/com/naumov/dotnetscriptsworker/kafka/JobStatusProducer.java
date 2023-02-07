@@ -1,8 +1,8 @@
 package com.naumov.dotnetscriptsworker.kafka;
 
 import com.naumov.dotnetscriptsworker.config.props.KafkaProperties;
-import com.naumov.dotnetscriptsworker.dto.JobFinishedDto;
-import com.naumov.dotnetscriptsworker.dto.JobStartedDto;
+import com.naumov.dotnetscriptsworker.dto.prod.JobFinishedMessage;
+import com.naumov.dotnetscriptsworker.dto.prod.JobStartedMessage;
 import com.naumov.dotnetscriptsworker.dto.mapper.DtoMapper;
 import com.naumov.dotnetscriptsworker.dto.mapper.impl.JobFinishedToDtoMapper;
 import com.naumov.dotnetscriptsworker.model.JobResults;
@@ -17,14 +17,14 @@ import org.springframework.stereotype.Component;
 public class JobStatusProducer {
     private static final Logger LOGGER = LogManager.getLogger(JobStatusProducer.class);
     private final KafkaProperties kafkaProperties;
-    private final KafkaTemplate<String, JobStartedDto> jobStartedKafkaTemplate;
-    private final KafkaTemplate<String, JobFinishedDto> jobFinishedKafkaTemplate;
-    private final DtoMapper<JobResults, JobFinishedDto> jobFinishedDtoMapper;
+    private final KafkaTemplate<String, JobStartedMessage> jobStartedKafkaTemplate;
+    private final KafkaTemplate<String, JobFinishedMessage> jobFinishedKafkaTemplate;
+    private final DtoMapper<JobResults, JobFinishedMessage> jobFinishedDtoMapper;
 
     @Autowired
     public JobStatusProducer(KafkaProperties kafkaProperties,
-                             KafkaTemplate<String, JobStartedDto> jobStartedKafkaTemplate,
-                             KafkaTemplate<String, JobFinishedDto> jobFinishedKafkaTemplate,
+                             KafkaTemplate<String, JobStartedMessage> jobStartedKafkaTemplate,
+                             KafkaTemplate<String, JobFinishedMessage> jobFinishedKafkaTemplate,
                              JobFinishedToDtoMapper jobFinishedToDtoMapper) {
         this.kafkaProperties = kafkaProperties;
         this.jobStartedKafkaTemplate = jobStartedKafkaTemplate;
@@ -34,7 +34,7 @@ public class JobStatusProducer {
 
     public void reportJobStartedAsync(String jobId) {
         String runningTopic = kafkaProperties.getRunningTopicName();
-        jobStartedKafkaTemplate.send(runningTopic, new JobStartedDto(jobId))
+        jobStartedKafkaTemplate.send(runningTopic, new JobStartedMessage(jobId))
                 .thenAccept(res -> {
                     LOGGER.info("Reported job {} started to topic {}", jobId, runningTopic);
                 }).exceptionally(e -> {
@@ -44,13 +44,13 @@ public class JobStatusProducer {
     }
 
     public void reportJobFinishedAsync(JobResults jobResults) {
-        JobFinishedDto jobFinishedDto = jobFinishedDtoMapper.map(jobResults);
+        JobFinishedMessage jobFinishedMessage = jobFinishedDtoMapper.map(jobResults);
         String finishedTopic = kafkaProperties.getFinishedTopicName();
-        jobFinishedKafkaTemplate.send(finishedTopic, jobFinishedDto)
+        jobFinishedKafkaTemplate.send(finishedTopic, jobFinishedMessage)
                 .thenAccept(res -> {
-                    LOGGER.info("Reported job {} finished to topic {}", jobFinishedDto.getJobId(), finishedTopic);
+                    LOGGER.info("Reported job {} finished to topic {}", jobFinishedMessage.getJobId(), finishedTopic);
                 }).exceptionally(e -> {
-                    LOGGER.error("Failed to report job {} finished to topic {}", jobFinishedDto.getJobId(), finishedTopic, e);
+                    LOGGER.error("Failed to report job {} finished to topic {}", jobFinishedMessage.getJobId(), finishedTopic, e);
                     return null;
                 });
     }

@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class JobResults {
     private final String jobId;
-    private JobResults.Status status;
+    private Status status;
     private ScriptResults scriptResults;
 
     public enum Status {
@@ -15,11 +15,11 @@ public class JobResults {
 
     @Data
     public static class ScriptResults {
-        private Status finishedWith;
+        private JobCompletionStatus finishedWith;
         private String stdout;
         private String stderr;
 
-        public enum Status {
+        public enum JobCompletionStatus {
             SUCCEEDED,
             FAILED,
             TIME_LIMIT_EXCEEDED

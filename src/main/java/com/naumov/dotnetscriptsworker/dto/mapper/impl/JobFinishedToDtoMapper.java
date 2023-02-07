@@ -1,6 +1,6 @@
 package com.naumov.dotnetscriptsworker.dto.mapper.impl;
 
-import com.naumov.dotnetscriptsworker.dto.JobFinishedDto;
+import com.naumov.dotnetscriptsworker.dto.prod.JobFinishedMessage;
 import com.naumov.dotnetscriptsworker.dto.mapper.DtoMapper;
 import com.naumov.dotnetscriptsworker.model.JobResults;
 import org.springframework.stereotype.Component;
@@ -8,34 +8,34 @@ import org.springframework.stereotype.Component;
 import java.util.Objects;
 
 @Component
-public class JobFinishedToDtoMapper implements DtoMapper<JobResults, JobFinishedDto> {
+public class JobFinishedToDtoMapper implements DtoMapper<JobResults, JobFinishedMessage> {
 
     @Override
-    public JobFinishedDto map(JobResults jobResults) {
+    public JobFinishedMessage map(JobResults jobResults) {
         Objects.requireNonNull(jobResults, "Parameter jobResults must not be null");
-        JobFinishedDto jobFinishedDto = new JobFinishedDto(jobResults.getJobId());
-        jobFinishedDto.setStatus(mapJobStatus(jobResults.getStatus()));
-        jobFinishedDto.setScriptResults(mapScriptResults(jobResults.getScriptResults()));
+        JobFinishedMessage jobFinishedMessage = new JobFinishedMessage(jobResults.getJobId());
+        jobFinishedMessage.setStatus(mapJobStatus(jobResults.getStatus()));
+        jobFinishedMessage.setScriptResults(mapScriptResults(jobResults.getScriptResults()));
 
-        return jobFinishedDto;
+        return jobFinishedMessage;
     }
 
-    private JobFinishedDto.Status mapJobStatus(JobResults.Status status) {
+    private JobFinishedMessage.Status mapJobStatus(JobResults.Status status) {
         if (status == null) return null;
-        return JobFinishedDto.Status.valueOf(status.name());
+        return JobFinishedMessage.Status.valueOf(status.name());
     }
 
-    private JobFinishedDto.ScriptResults mapScriptResults(JobResults.ScriptResults scriptResults) {
+    private JobFinishedMessage.ScriptResults mapScriptResults(JobResults.ScriptResults scriptResults) {
         if (scriptResults == null) return null;
-        JobFinishedDto.ScriptResults results = new JobFinishedDto.ScriptResults();
+        JobFinishedMessage.ScriptResults results = new JobFinishedMessage.ScriptResults();
         results.setFinishedWith(mapScriptResultsStatus(scriptResults.getFinishedWith()));
         results.setStdout(scriptResults.getStdout());
         results.setStderr(scriptResults.getStderr());
         return results;
     }
 
-    private JobFinishedDto.ScriptResults.Status mapScriptResultsStatus(JobResults.ScriptResults.Status finishedWith) {
+    private JobFinishedMessage.ScriptResults.JobCompletionStatus mapScriptResultsStatus(JobResults.ScriptResults.JobCompletionStatus finishedWith) {
         if (finishedWith == null) return null;
-        return JobFinishedDto.ScriptResults.Status.valueOf(finishedWith.name());
+        return JobFinishedMessage.ScriptResults.JobCompletionStatus.valueOf(finishedWith.name());
     }
 }

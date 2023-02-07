@@ -37,8 +37,8 @@ public class JobFilesServiceImpl implements JobFilesService {
 
             Files.createDirectories(tempDirPath);
             createAndWriteFile(scriptFilePath, jobTask.getJobScript());
-            if (jobTask.getJobConfig() != null && jobTask.getJobConfig().getNugetConfig() != null) {
-                createAndWriteFile(nugetConfigFilePath, jobTask.getJobConfig().getNugetConfig());
+            if (jobTask.getJobConfig() != null && jobTask.getJobConfig().getNugetConfigXml() != null) {
+                createAndWriteFile(nugetConfigFilePath, jobTask.getJobConfig().getNugetConfigXml());
                 LOGGER.debug("Created Nuget.Config file for job {} at {}", jobId, nugetConfigFilePath);
             }
 

@@ -1,12 +1,12 @@
-package com.naumov.dotnetscriptsworker.dto;
+package com.naumov.dotnetscriptsworker.dto.prod;
 
 import lombok.Data;
 
 @Data
-public class JobFinishedDto {
+public class JobFinishedMessage {
     private final String jobId;
-    private JobFinishedDto.Status status;
-    private JobFinishedDto.ScriptResults scriptResults;
+    private Status status;
+    private ScriptResults scriptResults;
 
     public enum Status {
         ACCEPTED,
@@ -15,11 +15,11 @@ public class JobFinishedDto {
 
     @Data
     public static class ScriptResults {
-        private Status finishedWith;
+        private JobCompletionStatus finishedWith;
         private String stdout;
         private String stderr;
 
-        public enum Status {
+        public enum JobCompletionStatus {
             SUCCEEDED,
             FAILED,
             TIME_LIMIT_EXCEEDED

@@ -138,16 +138,16 @@ public class JobServiceImpl implements JobService {
 
         try {
             JobResults.ScriptResults scriptResults = new JobResults.ScriptResults();
-            JobResults.ScriptResults.Status completionStatus;
+            JobResults.ScriptResults.JobCompletionStatus completionStatus;
             if (completedInTime(containerId, jobTimeoutMs)) {
                 completionStatus = containerService.getExitCode(containerId) == 0
-                        ? JobResults.ScriptResults.Status.SUCCEEDED
-                        : JobResults.ScriptResults.Status.FAILED;
+                        ? JobResults.ScriptResults.JobCompletionStatus.SUCCEEDED
+                        : JobResults.ScriptResults.JobCompletionStatus.FAILED;
                 LOGGER.info("Job {} finished in time with status {}, container {} stopped",
                         jobId, completionStatus, containerId);
             } else {
                 LOGGER.info("Job {} exceeded time limit, container {} will be stopped", jobId, containerId);
-                completionStatus = JobResults.ScriptResults.Status.TIME_LIMIT_EXCEEDED;
+                completionStatus = JobResults.ScriptResults.JobCompletionStatus.TIME_LIMIT_EXCEEDED;
                 containerService.stopContainer(containerId, true);
             }
 

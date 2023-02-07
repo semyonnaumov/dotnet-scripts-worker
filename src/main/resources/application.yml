@@ -9,7 +9,7 @@ worker:
     job-script-file-name: main.csx
     max-containers: 2
     container:
-      image: sandbox:${worker.sandbox.runner-type}
+      image: semyonnaumov/sandbox:${worker.sandbox.runner-type}
       name-prefix: sandbox-job-
       memory-mb: 1024
       memory-reservation-mb: 256
@@ -24,8 +24,8 @@ worker:
 #    docker-host: tcp://localhost:12376 # for docker-compose
     docker-tls-verify: false
     docker-cert-path: /Users/snaumov/.docker
-    registry-url: registryUrl
-    registry-user: registryUser
+    registry-url: docker.io
+    registry-user: semyonnaumov
     registry-password: registryPass
     registry-email: registryMail
     max-connections: 100

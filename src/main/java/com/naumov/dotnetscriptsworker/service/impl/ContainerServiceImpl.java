@@ -6,13 +6,11 @@ import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.exception.NotModifiedException;
-import com.github.dockerjava.api.model.Bind;
-import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.Frame;
-import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.*;
 import com.naumov.dotnetscriptsworker.config.props.SandboxContainerProperties;
 import com.naumov.dotnetscriptsworker.service.ContainerService;
 import com.naumov.dotnetscriptsworker.service.exception.ContainerServiceException;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,6 +35,31 @@ public class ContainerServiceImpl implements ContainerService {
                                 SandboxContainerProperties sandboxContainerProperties) {
         this.dockerClient = dockerClient;
         this.sandboxContainerProperties = sandboxContainerProperties;
+    }
+
+    @PostConstruct
+    public void init() {
+        try {
+            LOGGER.info("{} initialization: pulling image",
+                    ContainerServiceImpl.class.getSimpleName());
+
+            dockerClient.pullImageCmd("semyonnaumov/sandbox")
+                    .withTag("linux-amd64-dotnet-7")
+                    .exec(new ResultCallback.Adapter<PullResponseItem>() {
+                        @Override
+                        public void onNext(PullResponseItem item) {
+                            LOGGER.info("Pulling success: {}: {}", item.getId(), item.isPullSuccessIndicated());
+                        }
+                    })
+                    .awaitCompletion(100000, TimeUnit.MILLISECONDS);
+
+            LOGGER.info("{} initialization: finished pulling",
+                    ContainerServiceImpl.class.getSimpleName());
+        } catch (Exception e) {
+            LOGGER.error("{} initialization: failed pulling",
+                    ContainerServiceImpl.class.getSimpleName(), e);
+            throw new ContainerServiceException("Failed to pull", e);
+        }
     }
 
     @Override
@@ -78,9 +101,8 @@ public class ContainerServiceImpl implements ContainerService {
         try {
             String volumeBindDescriptor = getVolumeBindDescriptor(volumeSrcPath, volumeDestPath);
             HostConfig hostConfig = HostConfig.newHostConfig()
-                    .withBinds(Bind.parse(volumeBindDescriptor))
-                    .withMemory(sandboxContainerProperties.getMemoryMb() * MEGABYTE_MULTIPLIER)
-                    .withMemoryReservation(sandboxContainerProperties.getMemoryReservationMb() * MEGABYTE_MULTIPLIER)
+//                    .withMemory(sandboxContainerProperties.getMemoryMb() * MEGABYTE_MULTIPLIER)
+//                    .withMemoryReservation(sandboxContainerProperties.getMemoryReservationMb() * MEGABYTE_MULTIPLIER)
                     .withCpuPeriod(sandboxContainerProperties.getCpuPeriodMicros())
                     .withCpuQuota(sandboxContainerProperties.getCpuQuotaMicros())
                     .withCpuShares(sandboxContainerProperties.getCpuShares())
@@ -89,7 +111,8 @@ public class ContainerServiceImpl implements ContainerService {
                     // TODO not working:
                     //  com.github.dockerjava.api.exception.InternalServerErrorException: Status 500: {"message":"--storage-opt is supported only for overlay over xfs with 'pquota' mount option"}
 //                    .withStorageOpt(Collections.singletonMap(STORAGE_OPT_SIZE, sandboxContainerProperties.getStorageSize()))
-                    .withSecurityOpts(List.of(NO_NEW_PRIVILEGES_SECURITY_OPT));
+                    .withSecurityOpts(List.of(NO_NEW_PRIVILEGES_SECURITY_OPT))
+                    .withBinds(Bind.parse(volumeBindDescriptor));
 
             CreateContainerResponse createContainerResponse = dockerClient.createContainerCmd(sandboxImageName)
                     .withEntrypoint("dotnet-script", volumeDestPath + "/" + scriptFileName, "-c", "release")
