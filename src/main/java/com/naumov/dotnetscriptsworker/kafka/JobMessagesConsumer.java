@@ -1,6 +1,5 @@
 package com.naumov.dotnetscriptsworker.kafka;
 
-import com.naumov.dotnetscriptsworker.config.props.KafkaProperties;
 import com.naumov.dotnetscriptsworker.dto.cons.JobTaskMessage;
 import com.naumov.dotnetscriptsworker.dto.mapper.impl.JobTaskFromDtoMapper;
 import com.naumov.dotnetscriptsworker.model.JobTask;
@@ -15,18 +14,15 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 @Component
-public class JobTaskConsumer {
-    private static final Logger LOGGER = LogManager.getLogger(JobTaskConsumer.class);
-    private final KafkaProperties kafkaProperties;
+public class JobMessagesConsumer {
+    private static final Logger LOGGER = LogManager.getLogger(JobMessagesConsumer.class);
     private final JobService jobService;
     private final JobTaskFromDtoMapper jobTaskFromDtoMapper;
 
     @Autowired
-    public JobTaskConsumer(JobService jobService,
-                           KafkaProperties kafkaProperties,
-                           JobTaskFromDtoMapper jobTaskFromDtoMapper) {
+    public JobMessagesConsumer(JobService jobService,
+                               JobTaskFromDtoMapper jobTaskFromDtoMapper) {
         this.jobService = jobService;
-        this.kafkaProperties = kafkaProperties;
         this.jobTaskFromDtoMapper = jobTaskFromDtoMapper;
     }
 

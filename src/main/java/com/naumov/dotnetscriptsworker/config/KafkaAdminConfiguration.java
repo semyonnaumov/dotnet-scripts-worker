@@ -12,11 +12,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-public class KafkaAdminConfig {
+public class KafkaAdminConfiguration {
     private final KafkaAdminProperties kafkaAdminProperties;
 
     @Autowired
-    public KafkaAdminConfig(KafkaAdminProperties kafkaAdminProperties) {
+    public KafkaAdminConfiguration(KafkaAdminProperties kafkaAdminProperties) {
         this.kafkaAdminProperties = kafkaAdminProperties;
     }
 

@@ -14,18 +14,18 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
-public class JobStatusProducer {
-    private static final Logger LOGGER = LogManager.getLogger(JobStatusProducer.class);
+public class JobMessagesProducer {
+    private static final Logger LOGGER = LogManager.getLogger(JobMessagesProducer.class);
     private final KafkaProperties kafkaProperties;
     private final KafkaTemplate<String, JobStartedMessage> jobStartedKafkaTemplate;
     private final KafkaTemplate<String, JobFinishedMessage> jobFinishedKafkaTemplate;
     private final DtoMapper<JobResults, JobFinishedMessage> jobFinishedDtoMapper;
 
     @Autowired
-    public JobStatusProducer(KafkaProperties kafkaProperties,
-                             KafkaTemplate<String, JobStartedMessage> jobStartedKafkaTemplate,
-                             KafkaTemplate<String, JobFinishedMessage> jobFinishedKafkaTemplate,
-                             JobFinishedToDtoMapper jobFinishedToDtoMapper) {
+    public JobMessagesProducer(KafkaProperties kafkaProperties,
+                               KafkaTemplate<String, JobStartedMessage> jobStartedKafkaTemplate,
+                               KafkaTemplate<String, JobFinishedMessage> jobFinishedKafkaTemplate,
+                               JobFinishedToDtoMapper jobFinishedToDtoMapper) {
         this.kafkaProperties = kafkaProperties;
         this.jobStartedKafkaTemplate = jobStartedKafkaTemplate;
         this.jobFinishedKafkaTemplate = jobFinishedKafkaTemplate;

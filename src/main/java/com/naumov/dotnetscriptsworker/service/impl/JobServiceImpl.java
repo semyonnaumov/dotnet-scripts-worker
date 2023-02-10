@@ -2,7 +2,7 @@ package com.naumov.dotnetscriptsworker.service.impl;
 
 import com.naumov.dotnetscriptsworker.config.props.SandboxContainerProperties;
 import com.naumov.dotnetscriptsworker.config.props.SandboxProperties;
-import com.naumov.dotnetscriptsworker.kafka.JobStatusProducer;
+import com.naumov.dotnetscriptsworker.kafka.JobMessagesProducer;
 import com.naumov.dotnetscriptsworker.model.JobResults;
 import com.naumov.dotnetscriptsworker.model.JobTask;
 import com.naumov.dotnetscriptsworker.service.ContainerService;
@@ -27,7 +27,7 @@ public class JobServiceImpl implements JobService {
     private static final Logger LOGGER = LogManager.getLogger(JobServiceImpl.class);
     private final ContainerService containerService;
     private final JobFilesService jobFilesService;
-    private final JobStatusProducer jobStatusProducer;
+    private final JobMessagesProducer jobMessagesProducer;
     private final SandboxProperties sandboxProperties;
     private final SandboxContainerProperties sandboxContainerProperties;
     private final ContainerizedJobsPool containerizedJobsPool;
@@ -35,13 +35,13 @@ public class JobServiceImpl implements JobService {
     @Autowired
     public JobServiceImpl(ContainerService containerService,
                           JobFilesService jobFilesService,
-                          JobStatusProducer jobStatusProducer,
+                          JobMessagesProducer jobMessagesProducer,
                           SandboxProperties sandboxProperties,
                           SandboxContainerProperties sandboxContainerProperties,
                           ContainerizedJobsPool containerizedJobsPool) {
         this.containerService = containerService;
         this.jobFilesService = jobFilesService;
-        this.jobStatusProducer = jobStatusProducer;
+        this.jobMessagesProducer = jobMessagesProducer;
         this.sandboxProperties = sandboxProperties;
         this.sandboxContainerProperties = sandboxContainerProperties;
         this.containerizedJobsPool = containerizedJobsPool;
@@ -83,7 +83,7 @@ public class JobServiceImpl implements JobService {
             // unable to run this job right now - reject
             LOGGER.warn("Job {} was rejected", jobId, e);
             jobResults.setStatus(JobResults.Status.REJECTED);
-            jobStatusProducer.reportJobFinishedAsync(jobResults);
+            jobMessagesProducer.reportJobFinishedAsync(jobResults);
             return;
         }
 
@@ -95,11 +95,11 @@ public class JobServiceImpl implements JobService {
 
             String containerId = startJobContainer(jobId, jobTempDirPath);
             containerizedJob.setContainerId(containerId);
-            jobStatusProducer.reportJobStartedAsync(jobId);
+            jobMessagesProducer.reportJobStartedAsync(jobId);
 
             JobResults.ScriptResults scriptResults = getJobContainerResults(jobId, containerId);
             jobResults.setScriptResults(scriptResults);
-            jobStatusProducer.reportJobFinishedAsync(jobResults);
+            jobMessagesProducer.reportJobFinishedAsync(jobResults);
         } catch (RuntimeException e) {
             LOGGER.error("Failed to run job {}", jobId, e);
             throw new JobServiceException("Failed to run job " + jobId, e);
