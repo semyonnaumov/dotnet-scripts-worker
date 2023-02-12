@@ -1,6 +1,6 @@
 package com.naumov.dotnetscriptsworker.config;
 
-import com.naumov.dotnetscriptsworker.config.props.KafkaProperties;
+import com.naumov.dotnetscriptsworker.config.props.WorkerKafkaProperties;
 import com.naumov.dotnetscriptsworker.dto.prod.JobFinishedMessage;
 import com.naumov.dotnetscriptsworker.dto.prod.JobStartedMessage;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -18,10 +18,10 @@ import java.util.Map;
 
 @Configuration
 public class KafkaProducersConfiguration {
-    private final KafkaProperties kafkaProperties;
+    private final WorkerKafkaProperties kafkaProperties;
 
     @Autowired
-    public KafkaProducersConfiguration(KafkaProperties kafkaProperties) {
+    public KafkaProducersConfiguration(WorkerKafkaProperties kafkaProperties) {
         this.kafkaProperties = kafkaProperties;
     }
 

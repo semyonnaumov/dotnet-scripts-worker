@@ -1,8 +1,14 @@
 package com.naumov.dotnetscriptsworker.dto.prod;
 
-import lombok.Data;
+import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
+import lombok.Getter;
 
-@Data
-public class JobStartedMessage {
-    private final String jobId;
+import java.util.UUID;
+
+@Getter
+@Builder
+public final class JobStartedMessage {
+    @NotNull
+    private final UUID jobId;
 }

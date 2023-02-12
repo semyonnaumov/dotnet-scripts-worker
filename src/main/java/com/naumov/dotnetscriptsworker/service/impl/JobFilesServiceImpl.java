@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 @Service
@@ -29,7 +30,7 @@ public class JobFilesServiceImpl implements JobFilesService {
 
     @Override
     public String prepareJobFiles(JobTask jobTask) {
-        String jobId = jobTask.getJobId();
+        UUID jobId = jobTask.getJobId();
         try {
             Path tempDirPath = getJobTempDirectoryPath(jobId);
             Path scriptFilePath = getJobTempDirectoryFilePath(jobId, sandboxProperties.getJobScriptFileName());
@@ -51,7 +52,7 @@ public class JobFilesServiceImpl implements JobFilesService {
     }
 
     @Override
-    public void cleanupJobFiles(String jobId) {
+    public void cleanupJobFiles(UUID jobId) {
         Path tempDirectoryPath = getJobTempDirectoryPath(jobId);
         try (Stream<Path> pathStream = Files.walk(tempDirectoryPath)) {
             List<Path> pathsToDelete = pathStream.sorted(Comparator.reverseOrder()).toList();
@@ -70,13 +71,13 @@ public class JobFilesServiceImpl implements JobFilesService {
         Files.writeString(filePath, contents);
     }
 
-    private Path getJobTempDirectoryPath(String jobId) {
-        return Paths.get(sandboxProperties.getJobFilesHostDir(), jobId)
+    private Path getJobTempDirectoryPath(UUID jobId) {
+        return Paths.get(sandboxProperties.getJobFilesHostDir(), jobId.toString())
                 .toAbsolutePath();
     }
 
-    private Path getJobTempDirectoryFilePath(String jobId, String fileName) {
-        return Paths.get(sandboxProperties.getJobFilesHostDir(), jobId, fileName)
+    private Path getJobTempDirectoryFilePath(UUID jobId, String fileName) {
+        return Paths.get(sandboxProperties.getJobFilesHostDir(), jobId.toString(), fileName)
                 .toAbsolutePath();
     }
 }

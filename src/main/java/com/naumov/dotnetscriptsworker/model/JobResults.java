@@ -1,23 +1,28 @@
 package com.naumov.dotnetscriptsworker.model;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 
-@Data
-public class JobResults {
-    private final String jobId;
-    private Status status;
-    private ScriptResults scriptResults;
+import java.util.UUID;
+
+@Getter
+@Builder
+public final class JobResults {
+    private final UUID jobId;
+    private final Status status;
+    private final ScriptResults scriptResults;
 
     public enum Status {
         ACCEPTED,
         REJECTED
     }
 
-    @Data
-    public static class ScriptResults {
-        private JobCompletionStatus finishedWith;
-        private String stdout;
-        private String stderr;
+    @Getter
+    @Builder
+    public static final class ScriptResults {
+        private final JobCompletionStatus finishedWith;
+        private final String stdout;
+        private final String stderr;
 
         public enum JobCompletionStatus {
             SUCCEEDED,

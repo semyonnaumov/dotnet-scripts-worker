@@ -1,6 +1,7 @@
 package com.naumov.dotnetscriptsworker.sync;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Component, used to synchronize job running threads on running containers.
@@ -19,7 +20,7 @@ public interface ContainerizedJobsPool {
      * @return newly allocated job or job from the pool with the same {@code jobId}
      * @throws ContainerizedJobAllocationException when failed to allocate
      */
-    ContainerizedJob tryAllocate(String jobId, long timeoutMs) throws ContainerizedJobAllocationException;
+    ContainerizedJob tryAllocate(UUID jobId, long timeoutMs) throws ContainerizedJobAllocationException;
 
     /**
      * Removes {@code containerizedJob} from the pool, assuming it's been finished,

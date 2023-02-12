@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class JobServiceImpl implements JobService {
@@ -68,9 +69,8 @@ public class JobServiceImpl implements JobService {
 
     @Override
     public void runJob(JobTask jobTask) {
-        String jobId = jobTask.getJobId();
-        JobResults jobResults = new JobResults(jobId);
-
+        UUID jobId = jobTask.getJobId();
+        JobResults.JobResultsBuilder jobResultsBuilder = JobResults.builder().jobId(jobId);
         ContainerizedJob containerizedJob;
         try {
             containerizedJob = containerizedJobsPool.tryAllocate(jobId, sandboxProperties.getContainerOperationsTimeoutMs());
@@ -79,15 +79,17 @@ public class JobServiceImpl implements JobService {
                 LOGGER.info("Skipped running job {}, it is a duplicate", jobId);
                 return;
             }
+
         } catch (ContainerizedJobAllocationException e) {
             // unable to run this job right now - reject
             LOGGER.warn("Job {} was rejected", jobId, e);
-            jobResults.setStatus(JobResults.Status.REJECTED);
-            jobMessagesProducer.reportJobFinishedAsync(jobResults);
+            JobResults jobResults = jobResultsBuilder.status(JobResults.Status.REJECTED).build();
+
+            jobMessagesProducer.sentJobFinishedMessageAsync(jobResults);
             return;
         }
 
-        jobResults.setStatus(JobResults.Status.ACCEPTED);
+        jobResultsBuilder.status(JobResults.Status.ACCEPTED);
         LOGGER.debug("Allocated container slot for {}", jobId);
 
         try {
@@ -95,11 +97,12 @@ public class JobServiceImpl implements JobService {
 
             String containerId = startJobContainer(jobId, jobTempDirPath);
             containerizedJob.setContainerId(containerId);
-            jobMessagesProducer.reportJobStartedAsync(jobId);
+            jobMessagesProducer.sendJobStartedMessageAsync(jobId);
 
             JobResults.ScriptResults scriptResults = getJobContainerResults(jobId, containerId);
-            jobResults.setScriptResults(scriptResults);
-            jobMessagesProducer.reportJobFinishedAsync(jobResults);
+            JobResults jobResults = jobResultsBuilder.scriptResults(scriptResults).build();
+
+            jobMessagesProducer.sentJobFinishedMessageAsync(jobResults);
         } catch (RuntimeException e) {
             LOGGER.error("Failed to run job {}", jobId, e);
             throw new JobServiceException("Failed to run job " + jobId, e);
@@ -109,7 +112,7 @@ public class JobServiceImpl implements JobService {
         }
     }
 
-    private String startJobContainer(String jobId, String jobTempDirPath) {
+    private String startJobContainer(UUID jobId, String jobTempDirPath) {
         String containerName = sandboxContainerProperties.getNamePrefix() + jobId;
         try {
             String containerId = containerService.createContainer(
@@ -131,13 +134,12 @@ public class JobServiceImpl implements JobService {
         }
     }
 
-    private JobResults.ScriptResults getJobContainerResults(String jobId,
+    private JobResults.ScriptResults getJobContainerResults(UUID jobId,
                                                             String containerId) {
         long jobTimeoutMs = sandboxProperties.getJobTimeoutMs();
         long containerOperationsTimeoutMs = sandboxProperties.getContainerOperationsTimeoutMs();
 
         try {
-            JobResults.ScriptResults scriptResults = new JobResults.ScriptResults();
             JobResults.ScriptResults.JobCompletionStatus completionStatus;
             if (completedInTime(containerId, jobTimeoutMs)) {
                 completionStatus = containerService.getExitCode(containerId) == 0
@@ -151,12 +153,13 @@ public class JobServiceImpl implements JobService {
                 containerService.stopContainer(containerId, true);
             }
 
-            scriptResults.setFinishedWith(completionStatus);
-            scriptResults.setStdout(containerService.getStdout(containerId, containerOperationsTimeoutMs));
-            scriptResults.setStderr(containerService.getStderr(containerId, containerOperationsTimeoutMs));
+            JobResults.ScriptResults scriptResults = JobResults.ScriptResults.builder()
+                    .finishedWith(completionStatus)
+                    .stdout(containerService.getStdout(containerId, containerOperationsTimeoutMs))
+                    .stderr(containerService.getStderr(containerId, containerOperationsTimeoutMs))
+                    .build();
 
             LOGGER.info("Finished job {} in container {}", jobId, containerId);
-
             return scriptResults;
         } finally {
             containerService.removeContainer(containerId, true);

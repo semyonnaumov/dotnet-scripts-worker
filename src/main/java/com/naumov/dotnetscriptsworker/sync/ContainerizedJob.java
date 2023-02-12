@@ -1,23 +1,24 @@
 package com.naumov.dotnetscriptsworker.sync;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Containerized job for {@link ContainerizedJobsPool}.
  * Equality is based on reference equality (instance equality).
  */
 public final class ContainerizedJob {
-    private final String jobId;
+    private final UUID jobId;
     private volatile String containerId;
     private volatile boolean requestedMultipleTimes = false; // for docker-wide deduping purposes
     private volatile boolean reclaimed = false;
 
-    public ContainerizedJob(String jobId) {
+    public ContainerizedJob(UUID jobId) {
         Objects.requireNonNull(jobId, "Parameter jobId must not be null");
         this.jobId = jobId;
     }
 
-    public String getJobId() {
+    public UUID getJobId() {
         return jobId;
     }
 

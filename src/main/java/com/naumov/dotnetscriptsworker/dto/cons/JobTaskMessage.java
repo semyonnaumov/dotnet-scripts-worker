@@ -1,15 +1,26 @@
 package com.naumov.dotnetscriptsworker.dto.cons;
 
-import lombok.Data;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-public class JobTaskMessage {
-    private String jobId;
+import java.util.UUID;
+
+@Getter
+@Setter
+public final class JobTaskMessage {
+    @NotNull
+    private UUID jobId;
+    @NotBlank
     private String script;
+    @Valid
     private JobConfig jobConfig;
 
-    @Data
-    public static class JobConfig {
+    @Getter
+    @Setter
+    public static final class JobConfig {
         private String nugetConfigXml;
     }
 }

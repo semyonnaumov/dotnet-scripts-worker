@@ -12,7 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Component
 public final class ContainerizedJobsPoolImpl implements ContainerizedJobsPool {
     private final int maxCapacity;
-    private final Map<String, ContainerizedJob> containerizedJobsMap = new HashMap<>();
+    private final Map<UUID, ContainerizedJob> containerizedJobsMap = new HashMap<>();
     private final ReentrantLock containerizedJobsMapLock = new ReentrantLock();
     private final Condition containerSlotAvailableCondition = containerizedJobsMapLock.newCondition();
 
@@ -22,7 +22,7 @@ public final class ContainerizedJobsPoolImpl implements ContainerizedJobsPool {
     }
 
     @Override
-    public ContainerizedJob tryAllocate(String jobId, long timeoutMs) throws ContainerizedJobAllocationException {
+    public ContainerizedJob tryAllocate(UUID jobId, long timeoutMs) throws ContainerizedJobAllocationException {
         long timeRemainingNs = TimeUnit.MILLISECONDS.toNanos(timeoutMs);
         containerizedJobsMapLock.lock();
         try {
@@ -57,7 +57,7 @@ public final class ContainerizedJobsPoolImpl implements ContainerizedJobsPool {
         Objects.requireNonNull(containerizedJob, "Parameter containerizedJob must not be null");
         containerizedJobsMapLock.lock();
         try {
-            String key = containerizedJob.getJobId();
+            UUID key = containerizedJob.getJobId();
             ContainerizedJob foundContainerizedJob = containerizedJobsMap.get(key);
             if (containerizedJob.equals(foundContainerizedJob)) {
                 containerizedJobsMap.remove(key);

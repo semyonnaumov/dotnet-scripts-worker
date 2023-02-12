@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("worker.kafka")
 @Component
-public class KafkaProperties {
+public class WorkerKafkaProperties {
     @NotBlank
     private String brokerUrl;
     @NotNull

@@ -1,28 +1,33 @@
 package com.naumov.dotnetscriptsworker.config;
 
-import com.naumov.dotnetscriptsworker.config.props.KafkaProperties;
+import com.naumov.dotnetscriptsworker.config.props.WorkerKafkaProperties;
 import com.naumov.dotnetscriptsworker.dto.cons.JobTaskMessage;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.annotation.KafkaListenerConfigurer;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.config.KafkaListenerEndpointRegistrar;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.util.HashMap;
 
 @Configuration
-public class KafkaConsumerConfiguration {
-    private final KafkaProperties kafkaProperties;
+public class KafkaConsumerConfiguration implements KafkaListenerConfigurer {
+    private final WorkerKafkaProperties kafkaProperties;
+    private final LocalValidatorFactoryBean validator;
 
     @Autowired
-    public KafkaConsumerConfiguration(KafkaProperties kafkaProperties) {
+    public KafkaConsumerConfiguration(WorkerKafkaProperties kafkaProperties, LocalValidatorFactoryBean validator) {
         this.kafkaProperties = kafkaProperties;
+        this.validator = validator;
     }
 
     @Bean
@@ -45,11 +50,18 @@ public class KafkaConsumerConfiguration {
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, JobTaskMessage> kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, JobTaskMessage> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        ConcurrentKafkaListenerContainerFactory<String, JobTaskMessage> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+
         factory.setConsumerFactory(jobsConsumerFactory());
         factory.setConcurrency(kafkaProperties.getConsumerConcurrency());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
 
         return factory;
+    }
+
+    @Override
+    public void configureKafkaListeners(KafkaListenerEndpointRegistrar registrar) {
+        registrar.setValidator(this.validator);
     }
 }

@@ -1,16 +1,21 @@
 package com.naumov.dotnetscriptsworker.model;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 
-@Data
-public class JobTask {
-    private final String jobId;
-    private String messageId;
-    private String jobScript;
-    private JobConfig jobConfig;
+import java.util.UUID;
 
-    @Data
-    public static class JobConfig {
-        private String nugetConfigXml;
+@Getter
+@Builder
+public final class JobTask {
+    private final UUID jobId;
+    private final UUID messageId;
+    private final String jobScript;
+    private final JobConfig jobConfig;
+
+    @Getter
+    @Builder
+    public static final class JobConfig {
+        private final String nugetConfigXml;
     }
 }
