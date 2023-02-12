@@ -101,8 +101,8 @@ public class ContainerServiceImpl implements ContainerService {
         try {
             String volumeBindDescriptor = getVolumeBindDescriptor(volumeSrcPath, volumeDestPath);
             HostConfig hostConfig = HostConfig.newHostConfig()
-//                    .withMemory(sandboxContainerProperties.getMemoryMb() * MEGABYTE_MULTIPLIER)
-//                    .withMemoryReservation(sandboxContainerProperties.getMemoryReservationMb() * MEGABYTE_MULTIPLIER)
+                    .withMemory(sandboxContainerProperties.getMemoryMb() * MEGABYTE_MULTIPLIER)
+                    .withMemoryReservation(sandboxContainerProperties.getMemoryReservationMb() * MEGABYTE_MULTIPLIER)
                     .withCpuPeriod(sandboxContainerProperties.getCpuPeriodMicros())
                     .withCpuQuota(sandboxContainerProperties.getCpuQuotaMicros())
                     .withCpuShares(sandboxContainerProperties.getCpuShares())
@@ -241,26 +241,6 @@ public class ContainerServiceImpl implements ContainerService {
             dockerClient.close();
         } catch (IOException e) {
             throw new ContainerServiceException("Failed to close " + dockerClient.getClass().getSimpleName(), e);
-        }
-    }
-
-    private enum ContainerStatus {
-        CREATED("created"),
-        RUNNING("running"),
-        PAUSED("paused"),
-        RESTARTING("restarting"),
-        REMOVING("removing"),
-        EXITED("exited"),
-        DEAD("dead");
-
-        private final String value;
-
-        ContainerStatus(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
         }
     }
 }
