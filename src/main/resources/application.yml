@@ -3,9 +3,8 @@ worker:
     runner-type: linux-amd64-dotnet-7
     container-operations-timeout-ms: 60000 # 1 min
     job-timeout-ms: 120000 # 2 min
-#    job-files-host-dir: /Users/snaumov/Desktop/scripts # TODO change to /tmp/scripts in Dockerfile
-    job-files-host-dir: /tmp/scripts
-    job-files-container-dir: /tmp/script # DinD container script file location
+    job-files-host-dir: ${WORKER_JOB_FILES_HOST_DIT:/tmp/scripts}
+    job-files-container-dir: /tmp/script
     job-script-file-name: main.csx
     max-containers: 2
     container:
@@ -20,20 +19,18 @@ worker:
       blkio-weight: 400
       storage-size: 5G # currently not supported
   docker-client:
-    docker-host: unix:/var/run/docker.sock # for local testing
-#    docker-host: tcp://localhost:12376 # for docker-compose
+    docker-host: unix:/var/run/docker.sock
     docker-tls-verify: false
-    docker-cert-path: /Users/snaumov/.docker
+    docker-cert-path: ${WORKER_DOCKER_CERT_PATH}
     registry-url: docker.io
-    registry-user: semyonnaumov
-    registry-password: registryPass
-    registry-email: registryMail
+    registry-user: ${WORKER_REGISTRY_USER:user}
+    registry-password: ${WORKER_REGISTRY_PASSWORD:password}
+    registry-email: ${WORKER_REGISTRY_EMAIL:user@mail.com}
     max-connections: 100
     connection-timeout-sec: 30
     response-timeout-sec: 45
   kafka:
-    broker-url: kafka-broker-1:9092
-#    broker-url: localhost:8097
+    broker-url: ${WORKER_KAFKA_BROKER_URL:localhost:8097}
     reconnect-backoff-ms: 100
     reconnect-backoff-max-ms: 10000
     jobs-topic-name: pending-${worker.sandbox.runner-type}
