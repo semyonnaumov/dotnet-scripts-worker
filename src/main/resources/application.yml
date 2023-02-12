@@ -26,8 +26,8 @@ worker:
     docker-tls-verify: false
     docker-cert-path: ${WORKER_DOCKER_CERT_PATH}
     registry-url: docker.io
-    registry-user: ${WORKER_REGISTRY_USER:user}
-    registry-password: ${WORKER_REGISTRY_PASSWORD:password}
+    registry-user: ${WORKER_REGISTRY_USER:comnaumovdotnetscripts}
+    registry-password: ${WORKER_REGISTRY_PASSWORD:1234567890}
     registry-email: ${WORKER_REGISTRY_EMAIL:user@mail.com}
     max-connections: 100
     connection-timeout-sec: 30
