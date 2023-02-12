@@ -109,17 +109,20 @@ public class ContainerServiceImpl implements ContainerService {
         try {
             String volumeBindDescriptor = getVolumeBindDescriptor(volumeSrcPath, volumeDestPath);
             HostConfig hostConfig = HostConfig.newHostConfig()
-                    .withMemory(sandboxContainerProperties.getMemoryMb() * MEGABYTE_MULTIPLIER)
-                    .withMemoryReservation(sandboxContainerProperties.getMemoryReservationMb() * MEGABYTE_MULTIPLIER)
-                    .withCpuPeriod(sandboxContainerProperties.getCpuPeriodMicros())
-                    .withCpuQuota(sandboxContainerProperties.getCpuQuotaMicros())
-                    .withCpuShares(sandboxContainerProperties.getCpuShares())
-                    .withPidsLimit(sandboxContainerProperties.getPidsLimit())
-                    .withBlkioWeight(sandboxContainerProperties.getBlkioWeight())
-                    // TODO not working: com.github.dockerjava.api.exception.InternalServerErrorException: Status 500: {"message":"--storage-opt is supported only for overlay over xfs with 'pquota' mount option"}
-//                    .withStorageOpt(Collections.singletonMap(STORAGE_OPT_SIZE, sandboxContainerProperties.getStorageSize()))
                     .withSecurityOpts(List.of(NO_NEW_PRIVILEGES_SECURITY_OPT))
                     .withBinds(Bind.parse(volumeBindDescriptor));
+
+            if (sandboxContainerProperties.getEnableResourceLimits()) {
+                hostConfig.withMemory(sandboxContainerProperties.getMemoryMb() * MEGABYTE_MULTIPLIER)
+                        .withMemoryReservation(sandboxContainerProperties.getMemoryReservationMb() * MEGABYTE_MULTIPLIER)
+                        .withCpuPeriod(sandboxContainerProperties.getCpuPeriodMicros())
+                        .withCpuQuota(sandboxContainerProperties.getCpuQuotaMicros())
+                        .withCpuShares(sandboxContainerProperties.getCpuShares())
+                        .withPidsLimit(sandboxContainerProperties.getPidsLimit())
+                        .withBlkioWeight(sandboxContainerProperties.getBlkioWeight());
+                        // TODO not working: com.github.dockerjava.api.exception.InternalServerErrorException: Status 500: {"message":"--storage-opt is supported only for overlay over xfs with 'pquota' mount option"}
+//                        .withStorageOpt(Collections.singletonMap(STORAGE_OPT_SIZE, sandboxContainerProperties.getStorageSize()))
+            }
 
             CreateContainerResponse createContainerResponse = dockerClient.createContainerCmd(sandboxImageName)
                     .withEntrypoint("dotnet-script", volumeDestPath + "/" + scriptFileName, "-c", "release")

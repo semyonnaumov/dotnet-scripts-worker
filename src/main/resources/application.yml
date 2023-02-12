@@ -12,6 +12,7 @@ worker:
       image-tag: ${worker.sandbox.runner-type}
       image: ${worker.sandbox.container.image-name}:${worker.sandbox.runner-type}
       name-prefix: sandbox-job-
+      enable-resource-limits: ${WORKER_ENABLE_RESOURCE_LIMITS:true}
       memory-mb: 1024
       memory-reservation-mb: 256
       cpu-period-micros: 200000

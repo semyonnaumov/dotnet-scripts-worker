@@ -26,6 +26,9 @@ public class SandboxContainerProperties {
     @NotBlank
     private String namePrefix;
 
+    @NotNull
+    private Boolean enableResourceLimits;
+
     /**
      * Docker "--memory" option
      */
