@@ -14,6 +14,11 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("worker.sandbox.container")
 @Component
 public class SandboxContainerProperties {
+    @NotBlank
+    private String imageName;
+
+    @NotBlank
+    private String imageTag;
 
     @NotBlank
     private String image;

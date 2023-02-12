@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class ContainerServiceImpl implements ContainerService {
     private static final Logger LOGGER = LogManager.getLogger(ContainerServiceImpl.class);
+    private static final int IMAGE_PULL_TIMEOUT_SEC = 120;
     private static final long MEGABYTE_MULTIPLIER = 1024 * 1024;
     private static final String NO_NEW_PRIVILEGES_SECURITY_OPT = "no-new-privileges";
     private static final String STORAGE_OPT_SIZE = "size";
@@ -40,25 +41,32 @@ public class ContainerServiceImpl implements ContainerService {
     @PostConstruct
     public void init() {
         try {
-            LOGGER.info("{} initialization: pulling image",
-                    ContainerServiceImpl.class.getSimpleName());
-
-            dockerClient.pullImageCmd("semyonnaumov/sandbox")
-                    .withTag("linux-amd64-dotnet-7")
-                    .exec(new ResultCallback.Adapter<PullResponseItem>() {
-                        @Override
-                        public void onNext(PullResponseItem item) {
-                            LOGGER.info("Pulling success: {}: {}", item.getId(), item.isPullSuccessIndicated());
-                        }
-                    })
-                    .awaitCompletion(100000, TimeUnit.MILLISECONDS);
-
-            LOGGER.info("{} initialization: finished pulling",
-                    ContainerServiceImpl.class.getSimpleName());
+            LOGGER.info("{} initialization: pulling sandbox image", ContainerServiceImpl.class.getSimpleName());
+            pullSandboxImage();
+            LOGGER.info("{} initialization: finished pulling sandbox image", ContainerServiceImpl.class.getSimpleName());
         } catch (Exception e) {
-            LOGGER.error("{} initialization: failed pulling",
-                    ContainerServiceImpl.class.getSimpleName(), e);
+            LOGGER.error("{} initialization: failed pulling sandbox image", ContainerServiceImpl.class.getSimpleName(), e);
             throw new ContainerServiceException("Failed to pull", e);
+        }
+    }
+
+    private void pullSandboxImage() throws InterruptedException {
+        LOGGER.info("Pulling image {}", sandboxContainerProperties.getImage());
+        boolean successfullyPulled = dockerClient.pullImageCmd(sandboxContainerProperties.getImageName())
+                .withTag(sandboxContainerProperties.getImageTag())
+                .exec(new ResultCallback.Adapter<PullResponseItem>() {
+                    @Override
+                    public void onNext(PullResponseItem item) {
+                        if (item.isPullSuccessIndicated()) {
+                            LOGGER.info("Successfully pulled {}", item.getId());
+                        } else if (item.isErrorIndicated()) {
+                            LOGGER.error("Failed to pull {}: {}", item.getId(), item.getErrorDetail());
+                        }
+                    }
+                })
+                .awaitCompletion(IMAGE_PULL_TIMEOUT_SEC, TimeUnit.SECONDS);
+        if (!successfullyPulled) {
+            throw new ContainerServiceException("Failed to pull image " + sandboxContainerProperties.getImage());
         }
     }
 
@@ -108,8 +116,7 @@ public class ContainerServiceImpl implements ContainerService {
                     .withCpuShares(sandboxContainerProperties.getCpuShares())
                     .withPidsLimit(sandboxContainerProperties.getPidsLimit())
                     .withBlkioWeight(sandboxContainerProperties.getBlkioWeight())
-                    // TODO not working:
-                    //  com.github.dockerjava.api.exception.InternalServerErrorException: Status 500: {"message":"--storage-opt is supported only for overlay over xfs with 'pquota' mount option"}
+                    // TODO not working: com.github.dockerjava.api.exception.InternalServerErrorException: Status 500: {"message":"--storage-opt is supported only for overlay over xfs with 'pquota' mount option"}
 //                    .withStorageOpt(Collections.singletonMap(STORAGE_OPT_SIZE, sandboxContainerProperties.getStorageSize()))
                     .withSecurityOpts(List.of(NO_NEW_PRIVILEGES_SECURITY_OPT))
                     .withBinds(Bind.parse(volumeBindDescriptor));

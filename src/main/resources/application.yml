@@ -8,7 +8,9 @@ worker:
     job-script-file-name: main.csx
     max-containers: 2
     container:
-      image: semyonnaumov/sandbox:${worker.sandbox.runner-type}
+      image-name: semyonnaumov/sandbox
+      image-tag: ${worker.sandbox.runner-type}
+      image: ${worker.sandbox.container.image-name}:${worker.sandbox.runner-type}
       name-prefix: sandbox-job-
       memory-mb: 1024
       memory-reservation-mb: 256
