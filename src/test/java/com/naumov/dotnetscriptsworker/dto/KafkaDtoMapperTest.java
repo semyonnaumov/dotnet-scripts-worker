@@ -11,11 +11,11 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class KafkaDtoMapperTest {
+class KafkaDtoMapperTest {
     private final KafkaDtoMapper kafkaDtoMapper = new KafkaDtoMapper();
 
     @Test
-    public void fromJobTaskMessageRegular() {
+    void fromJobTaskMessageRegular() {
         JobTaskMessage.JobConfig jobConfig = JobTaskMessage.JobConfig.builder()
                 .nugetConfigXml("<config />")
                 .build();
@@ -39,7 +39,7 @@ public class KafkaDtoMapperTest {
     }
 
     @Test
-    public void fromJobTaskMessageIncomplete() {
+    void fromJobTaskMessageIncomplete() {
         UUID jobId = UUID.randomUUID();
         JobTaskMessage jobTaskMessage = JobTaskMessage.builder()
                 .jobId(jobId)
@@ -58,12 +58,12 @@ public class KafkaDtoMapperTest {
     }
 
     @Test
-    public void fromJobTaskMessageNull() {
+    void fromJobTaskMessageNull() {
         assertNull(kafkaDtoMapper.fromJobTaskMessage(null, null));
     }
 
     @Test
-    public void toJobStartedMessageRegular() {
+    void toJobStartedMessageRegular() {
         UUID jobId = UUID.randomUUID();
         JobStartedMessage jobStartedMessage = kafkaDtoMapper.toJobStartedMessage(jobId);
         assertNotNull(jobStartedMessage);
@@ -71,12 +71,12 @@ public class KafkaDtoMapperTest {
     }
 
     @Test
-    public void toJobStartedMessageNull() {
+    void toJobStartedMessageNull() {
         assertNull(kafkaDtoMapper.toJobStartedMessage(null));
     }
 
     @Test
-    public void toJobFinishedMessageRegular() {
+    void toJobFinishedMessageRegular() {
         JobResults.ScriptResults scriptResults = JobResults.ScriptResults.builder()
                 .finishedWith(JobResults.ScriptResults.JobCompletionStatus.SUCCEEDED)
                 .stdout("some stdout")
@@ -103,7 +103,7 @@ public class KafkaDtoMapperTest {
     }
 
     @Test
-    public void toJobFinishedMessageIncomplete() {
+    void toJobFinishedMessageIncomplete() {
         UUID jobId = UUID.randomUUID();
         JobResults jobResults = JobResults.builder()
                 .jobId(jobId)
@@ -120,7 +120,7 @@ public class KafkaDtoMapperTest {
     }
 
     @Test
-    public void toJobFinishedMessageNull() {
+    void toJobFinishedMessageNull() {
         assertNull(kafkaDtoMapper.toJobFinishedMessage(null));
     }
 }

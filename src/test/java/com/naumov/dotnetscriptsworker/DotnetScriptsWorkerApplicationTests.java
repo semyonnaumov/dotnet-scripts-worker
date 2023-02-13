@@ -21,11 +21,11 @@ import static org.mockito.Mockito.when;
 class DotnetScriptsWorkerApplicationTests {
 
     @Test
-    public void contextLoads() {
+    void contextLoads() {
     }
 
     @Configuration
-    public static class TestConfig {
+    static class TestConfig {
 
         @Primary
         @Bean
