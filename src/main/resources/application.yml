@@ -22,7 +22,7 @@ worker:
       blkio-weight: 400
       storage-size: 5G # currently not supported
   docker-client:
-    docker-host: unix:/var/run/docker.sock
+    docker-host: ${WORKER_DOCKER_HOST:unix:/var/run/docker.sock}
     docker-tls-verify: false
     docker-cert-path: ${WORKER_DOCKER_CERT_PATH}
     registry-url: docker.io
