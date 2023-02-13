@@ -85,7 +85,7 @@ public class JobServiceImpl implements JobService {
             LOGGER.warn("Job {} was rejected - failed to allocate container slot from the pool", jobId, e);
             JobResults jobResults = jobResultsBuilder.status(JobResults.Status.REJECTED).build();
 
-            jobMessagesProducer.sentJobFinishedMessageAsync(jobResults);
+            jobMessagesProducer.sendJobFinishedMessageAsync(jobResults);
             return;
         }
 
@@ -101,7 +101,7 @@ public class JobServiceImpl implements JobService {
 
             JobResults.ScriptResults scriptResults = getJobContainerResults(jobId, containerId);
             JobResults jobResults = jobResultsBuilder.scriptResults(scriptResults).build();
-            jobMessagesProducer.sentJobFinishedMessageAsync(jobResults);
+            jobMessagesProducer.sendJobFinishedMessageAsync(jobResults);
         } catch (RuntimeException e) {
             LOGGER.error("Failed to run job {}", jobId, e);
             throw new JobServiceException("Failed to run job " + jobId, e);

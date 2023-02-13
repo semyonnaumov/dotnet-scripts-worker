@@ -47,7 +47,7 @@ public class JobMessagesProducer {
                 });
     }
 
-    public void sentJobFinishedMessageAsync(JobResults jobResults) {
+    public void sendJobFinishedMessageAsync(JobResults jobResults) {
         JobFinishedMessage jobFinishedMessage = dtoMapper.toJobFinishedMessage(jobResults);
         String finishedTopic = kafkaProperties.getFinishedTopicName();
 
