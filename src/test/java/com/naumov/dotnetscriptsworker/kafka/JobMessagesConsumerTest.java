@@ -12,13 +12,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class JobMessagesConsumerTest {
-    private JobService jobServiceMock;
     private final KafkaDtoMapper kafkaDtoMapper = new KafkaDtoMapper();
+    private JobService jobServiceMock;
     private JobMessagesConsumer jobMessagesConsumer;
 
     @BeforeEach
     void setup() {
-        this.jobServiceMock = mock(JobService.class);
+        jobServiceMock = mock(JobService.class);
         jobMessagesConsumer = new JobMessagesConsumer(jobServiceMock, kafkaDtoMapper);
     }
 
@@ -35,9 +35,10 @@ class JobMessagesConsumerTest {
 
     @Test
     void onJobTaskMessageJobServiceThrowsException() {
+        doThrow(RuntimeException.class).when(jobServiceMock).runJob(any());
+
         JobTaskMessage jobTaskMessage = JobTaskMessage.builder().build();
         Acknowledgment ackMock = mock(Acknowledgment.class);
-        doThrow(RuntimeException.class).when(jobServiceMock).runJob(any());
 
         assertThrows(RuntimeException.class, () -> jobMessagesConsumer.onJobTaskMessage(jobTaskMessage, ackMock));
 
