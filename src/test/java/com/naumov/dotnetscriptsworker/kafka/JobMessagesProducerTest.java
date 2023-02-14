@@ -17,14 +17,14 @@ import static org.mockito.Mockito.*;
 
 class JobMessagesProducerTest {
     private static KafkaTemplate<String, JobStartedMessage> jobStartedKafkaTemplateMock;
-    private static KafkaTemplate<String, JobFinishedMessage> jobFinishedKafkaTemplate;
+    private static KafkaTemplate<String, JobFinishedMessage> jobFinishedKafkaTemplateMock;
     private static JobMessagesProducer jobMessagesProducer;
 
     @SuppressWarnings("unchecked")
     @BeforeAll
     static void setUp() {
         jobStartedKafkaTemplateMock = (KafkaTemplate<String, JobStartedMessage>) mock(KafkaTemplate.class);
-        jobFinishedKafkaTemplate = (KafkaTemplate<String, JobFinishedMessage>) mock(KafkaTemplate.class);
+        jobFinishedKafkaTemplateMock = (KafkaTemplate<String, JobFinishedMessage>) mock(KafkaTemplate.class);
         WorkerKafkaProperties workerKafkaPropertiesMock = mock(WorkerKafkaProperties.class);
         when(workerKafkaPropertiesMock.getRunningTopicName()).thenReturn("running-topic");
         when(workerKafkaPropertiesMock.getFinishedTopicName()).thenReturn("finished-topic");
@@ -32,25 +32,29 @@ class JobMessagesProducerTest {
         jobMessagesProducer = new JobMessagesProducer(
                 workerKafkaPropertiesMock,
                 jobStartedKafkaTemplateMock,
-                jobFinishedKafkaTemplate,
+                jobFinishedKafkaTemplateMock,
                 new KafkaDtoMapper()
         );
 
-        when(jobStartedKafkaTemplateMock.send(any(), any())).thenReturn(CompletableFuture.completedFuture(null));
-        when(jobFinishedKafkaTemplate.send(any(), any())).thenReturn(CompletableFuture.completedFuture(null));
+        when(jobStartedKafkaTemplateMock.send(any(), any())).thenReturn(new CompletableFuture<>());
+        when(jobFinishedKafkaTemplateMock.send(any(), any())).thenReturn(new CompletableFuture<>());
     }
 
     @Test
     void sendJobStartedMessageAsync() {
         UUID uuid = UUID.randomUUID();
+
         jobMessagesProducer.sendJobStartedMessageAsync(uuid);
+
         verify(jobStartedKafkaTemplateMock, times(1)).send(eq("running-topic"), any());
     }
 
     @Test
     void sendJobFinishedMessageAsync() {
         JobResults jobResults = JobResults.builder().build();
+
         jobMessagesProducer.sendJobFinishedMessageAsync(jobResults);
-        verify(jobFinishedKafkaTemplate, times(1)).send(eq("finished-topic"), any());
+
+        verify(jobFinishedKafkaTemplateMock, times(1)).send(eq("finished-topic"), any());
     }
 }
