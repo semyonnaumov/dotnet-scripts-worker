@@ -13,10 +13,14 @@ import org.springframework.kafka.config.KafkaListenerEndpointRegistrar;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.ContainerProperties;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.support.serializer.DeserializationException;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.util.backoff.FixedBackOff;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
+import java.net.SocketTimeoutException;
 import java.util.HashMap;
 
 @Configuration
@@ -49,6 +53,14 @@ public class KafkaConsumerConfiguration implements KafkaListenerConfigurer {
     }
 
     @Bean
+    public DefaultErrorHandler commonErrorHandler() {
+        DefaultErrorHandler errorHandler = new DefaultErrorHandler(new FixedBackOff(100L, 1L));
+        errorHandler.addRetryableExceptions(SocketTimeoutException.class);
+        errorHandler.addNotRetryableExceptions(DeserializationException.class);
+        return errorHandler;
+    }
+
+    @Bean
     public ConcurrentKafkaListenerContainerFactory<String, JobTaskMessage> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, JobTaskMessage> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
@@ -56,6 +68,7 @@ public class KafkaConsumerConfiguration implements KafkaListenerConfigurer {
         factory.setConsumerFactory(jobsConsumerFactory());
         factory.setConcurrency(kafkaProperties.getConsumerConcurrency());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        factory.setCommonErrorHandler(commonErrorHandler());
 
         return factory;
     }
