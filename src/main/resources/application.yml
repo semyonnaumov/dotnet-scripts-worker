@@ -3,7 +3,7 @@ worker:
     runner-type: linux-amd64-dotnet-7
     container-operations-timeout-ms: 60000 # 1 min
     job-timeout-ms: 120000 # 2 min
-    job-files-host-dir: ${WORKER_JOB_FILES_HOST_DIT:/tmp/scripts}
+    job-files-host-dir: ${WORKER_JOB_FILES_HOST_DIR:/tmp/scripts}
     job-files-container-dir: /tmp/script
     job-script-file-name: main.csx
     max-containers: 2
