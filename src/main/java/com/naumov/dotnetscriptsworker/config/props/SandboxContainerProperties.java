@@ -85,4 +85,6 @@ public class SandboxContainerProperties {
      */
     @NotBlank
     private String storageSize;
+
+    private Boolean overrideEntrypoint = true;
 }

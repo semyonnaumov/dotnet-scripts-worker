@@ -32,10 +32,9 @@ public class SimpleContainerServiceMock implements ContainerService {
 
     @Override
     public String createContainer(String containerName,
-                                  String sandboxImageName,
-                                  String volumeSrcPath,
-                                  String volumeDestPath,
-                                  String scriptFileName) {
+                                  String imageName,
+                                  List<String> volumeBindsDescriptors,
+                                  Optional<List<String>> entrypoint) {
         Container newContainer = new Container(containerName);
         allContainers.add(newContainer);
         return newContainer.getId();

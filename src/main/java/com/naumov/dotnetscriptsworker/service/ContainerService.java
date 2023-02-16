@@ -1,6 +1,7 @@
 package com.naumov.dotnetscriptsworker.service;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service used to manipulate containers with job tasks.
@@ -25,19 +26,16 @@ public interface ContainerService {
     /**
      * Creates a job task container.
      *
-     * @param containerName    name of job container
-     * @param sandboxImageName image to create the container from
-     * @param volumeSrcPath    host directory to mount (read only) on the container
-     * @param volumeDestPath   destination of the mounted host directory in the container
-     * @param scriptFileName   file with the script to run name
+     * @param containerName          name to set to container
+     * @param imageName              image to create the container from
+     * @param volumeBindsDescriptors list of volumes to bind e.g.: ["/from:/to:ro", "/from:/somewhere-else"]
+     * @param entrypoint             optional entrypoint to override the container's, e.g.: ["/bin/sh", "echo", "hello"]
      * @return created container id
      */
     String createContainer(String containerName,
-                           String sandboxImageName,
-                           String volumeSrcPath,
-                           String volumeDestPath,
-                           String scriptFileName);
-
+                           String imageName,
+                           List<String> volumeBindsDescriptors,
+                           Optional<List<String>> entrypoint);
 
     /**
      * Starts the given container.

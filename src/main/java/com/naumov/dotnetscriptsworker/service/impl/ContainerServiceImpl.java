@@ -2,6 +2,7 @@ package com.naumov.dotnetscriptsworker.service.impl;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
+import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.exception.NotFoundException;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service("containerService")
 public class ContainerServiceImpl implements ContainerService {
@@ -102,15 +104,13 @@ public class ContainerServiceImpl implements ContainerService {
 
     @Override
     public String createContainer(String containerName,
-                                  String sandboxImageName,
-                                  String volumeSrcPath,
-                                  String volumeDestPath,
-                                  String scriptFileName) {
+                                  String imageName,
+                                  List<String> volumeBindsDescriptors,
+                                  Optional<List<String>> entrypoint) {
         try {
-            String volumeBindDescriptor = getVolumeBindDescriptor(volumeSrcPath, volumeDestPath);
             HostConfig hostConfig = HostConfig.newHostConfig()
                     .withSecurityOpts(List.of(NO_NEW_PRIVILEGES_SECURITY_OPT))
-                    .withBinds(Bind.parse(volumeBindDescriptor));
+                    .withBinds(mapBinds(volumeBindsDescriptors));
 
             if (sandboxContainerProperties.getEnableResourceLimits()) {
                 hostConfig.withMemory(sandboxContainerProperties.getMemoryMb() * MEGABYTE_MULTIPLIER)
@@ -125,15 +125,16 @@ public class ContainerServiceImpl implements ContainerService {
 //                        .withStorageOpt(Collections.singletonMap(STORAGE_OPT_SIZE, sandboxContainerProperties.getStorageSize()))
             }
 
-            CreateContainerResponse createContainerResponse = dockerClient.createContainerCmd(sandboxImageName)
-                    .withEntrypoint("dotnet-script", volumeDestPath + "/" + scriptFileName, "-c", "release")
+            CreateContainerCmd createContainerCmd = dockerClient.createContainerCmd(imageName)
                     .withName(containerName)
-                    .withHostConfig(hostConfig)
-                    .exec();
+                    .withHostConfig(hostConfig);
+
+            entrypoint.ifPresent(createContainerCmd::withEntrypoint);
+            CreateContainerResponse createContainerResponse = createContainerCmd.exec();
 
             String containerId = createContainerResponse.getId();
-            LOGGER.info("Created container {}, (name={}, image={}, volume={})",
-                    containerId, containerName, sandboxImageName, volumeBindDescriptor);
+            LOGGER.info("Created container {}, (name={}, image={}, binds={}, entrypoint={})",
+                    containerId, containerName, imageName, volumeBindsDescriptors, entrypoint);
 
             return containerId;
         } catch (RuntimeException e) {
@@ -142,8 +143,10 @@ public class ContainerServiceImpl implements ContainerService {
         }
     }
 
-    private String getVolumeBindDescriptor(String volumeSrcPath, String volumeDestPath) {
-        return volumeSrcPath + ":" + volumeDestPath + ":ro";
+    private static List<Bind> mapBinds(List<String> volumeBindsDescriptors) {
+        return Optional.ofNullable(volumeBindsDescriptors).orElse(List.of()).stream()
+                .map(Bind::parse)
+                .collect(Collectors.toList());
     }
 
     @Override

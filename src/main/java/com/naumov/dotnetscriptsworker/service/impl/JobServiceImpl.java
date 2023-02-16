@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -114,12 +115,16 @@ public class JobServiceImpl implements JobService {
     private String startJobContainer(UUID jobId, String jobTempDirPath) {
         String containerName = sandboxContainerProperties.getNamePrefix() + jobId;
         try {
+            List<String> volumeBinds = List.of(getVolumeBindDescriptorRo(jobTempDirPath, sandboxProperties.getJobFilesContainerDir()));
+            Optional<List<String>> entrypoint = sandboxContainerProperties.getOverrideEntrypoint()
+                    ? Optional.of(List.of("dotnet-script", sandboxProperties.getJobFilesContainerDir() + "/" + sandboxProperties.getJobScriptFileName(), "-c", "release"))
+                    : Optional.empty();
+
             String containerId = containerService.createContainer(
                     containerName,
                     sandboxContainerProperties.getImage(),
-                    jobTempDirPath,
-                    sandboxProperties.getJobFilesContainerDir(),
-                    sandboxProperties.getJobScriptFileName()
+                    volumeBinds,
+                    entrypoint
             );
 
             containerService.startContainer(containerId);
@@ -132,6 +137,10 @@ public class JobServiceImpl implements JobService {
             containerService.removeContainer(containerName, false);
             throw e;
         }
+    }
+
+    private String getVolumeBindDescriptorRo(String srcPath, String destPath) {
+        return srcPath + ":" + destPath + ":ro";
     }
 
     private JobResults.ScriptResults getJobContainerResults(UUID jobId,

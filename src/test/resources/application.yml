@@ -10,8 +10,9 @@ worker:
     container:
       image-name: alpine
       image-tag: 3.17.2
-      image: ${worker.sandbox.container.image-name}:${worker.sandbox.runner-type}
+      image: alpine:3.17.2
       name-prefix: sandbox-job-
+      override-entrypoint: false
       enable-resource-limits: ${WORKER_ENABLE_RESOURCE_LIMITS:true}
       memory-mb: 1024
       memory-reservation-mb: 256
