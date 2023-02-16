@@ -6,15 +6,14 @@ import com.naumov.dotnetscriptsworker.dto.prod.JobStartedMessage;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonSerializer;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Configuration
 public class KafkaProducersConfiguration {
@@ -26,8 +25,9 @@ public class KafkaProducersConfiguration {
     }
 
     @Bean
-    public Map<String, Object> commonKafkaProducerProperties() {
-        var props = new HashMap<String, Object>();
+    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public KafkaPropertyMapWrapper commonProducerProperties() {
+        var props = new KafkaPropertyMapWrapper();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBrokerUrl());
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
@@ -40,7 +40,7 @@ public class KafkaProducersConfiguration {
 
     @Bean
     public ProducerFactory<String, JobStartedMessage> jobStartedMessagesProducerFactory() {
-        var producerFactory = new DefaultKafkaProducerFactory<String, JobStartedMessage>(commonKafkaProducerProperties());
+        var producerFactory = new DefaultKafkaProducerFactory<String, JobStartedMessage>(commonProducerProperties().toMap());
         producerFactory.setProducerPerThread(true);
 
         return producerFactory;
@@ -48,7 +48,7 @@ public class KafkaProducersConfiguration {
 
     @Bean
     public ProducerFactory<String, JobFinishedMessage> jobFinishedMessagesProducerFactory() {
-        var producerFactory = new DefaultKafkaProducerFactory<String, JobFinishedMessage>(commonKafkaProducerProperties());
+        var producerFactory = new DefaultKafkaProducerFactory<String, JobFinishedMessage>(commonProducerProperties().toMap());
         producerFactory.setProducerPerThread(true);
 
         return producerFactory;
