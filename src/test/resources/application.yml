@@ -8,8 +8,8 @@ worker:
     job-script-file-name: main.csx
     max-containers: 2
     container:
-      image-name: semyonnaumov/sandbox
-      image-tag: ${worker.sandbox.runner-type}
+      image-name: alpine
+      image-tag: 3.17.2
       image: ${worker.sandbox.container.image-name}:${worker.sandbox.runner-type}
       name-prefix: sandbox-job-
       enable-resource-limits: ${WORKER_ENABLE_RESOURCE_LIMITS:true}

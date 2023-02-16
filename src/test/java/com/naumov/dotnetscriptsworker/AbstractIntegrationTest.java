@@ -36,7 +36,7 @@ public abstract class AbstractIntegrationTest {
             throw new IllegalStateException("Folder 'dockercerts' must be on the test classpath");
         }
 
-        Startables.deepStart(kafka);
+        Startables.deepStart(kafka, dind);
         registry.add("scheduler.kafka.broker-url", kafka::getBootstrapServers);
         registry.add("worker.docker-client.docker-host", () -> "tcp://localhost:" + dind.getMappedPort(DOCKER_INTERNAL_PORT));
         registry.add("worker.docker-client.docker-cert-path", () -> dockercertsUrl.getPath() + "/client");
