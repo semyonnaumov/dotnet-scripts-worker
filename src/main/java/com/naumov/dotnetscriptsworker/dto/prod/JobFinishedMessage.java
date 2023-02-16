@@ -1,33 +1,25 @@
 package com.naumov.dotnetscriptsworker.dto.prod;
 
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
 import java.util.UUID;
 
 @Getter
+@Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public final class JobFinishedMessage {
-    private final UUID jobId;
-    private final Status status;
-    private final ScriptResults scriptResults;
+    private UUID jobId;
+    private JobStatus status;
+    private ScriptResults scriptResults;
 
-    public enum Status {
-        ACCEPTED,
-        REJECTED
-    }
-
-    @Getter
-    @Builder
-    public static final class ScriptResults {
-        private final JobCompletionStatus finishedWith;
-        private final String stdout;
-        private final String stderr;
-
-        public enum JobCompletionStatus {
-            SUCCEEDED,
-            FAILED,
-            TIME_LIMIT_EXCEEDED
-        }
+    @Override
+    public String toString() {
+        return "JobFinishedMessage{" +
+                "jobId=" + jobId +
+                ", status=" + status +
+                ", scriptResults=" + scriptResults +
+                '}';
     }
 }

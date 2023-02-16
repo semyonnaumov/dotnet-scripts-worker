@@ -1,8 +1,8 @@
 package com.naumov.dotnetscriptsworker.dto;
 
+import com.naumov.dotnetscriptsworker.dto.cons.JobConfig;
 import com.naumov.dotnetscriptsworker.dto.cons.JobTaskMessage;
-import com.naumov.dotnetscriptsworker.dto.prod.JobFinishedMessage;
-import com.naumov.dotnetscriptsworker.dto.prod.JobStartedMessage;
+import com.naumov.dotnetscriptsworker.dto.prod.*;
 import com.naumov.dotnetscriptsworker.model.JobResults;
 import com.naumov.dotnetscriptsworker.model.JobTask;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,7 @@ class KafkaDtoMapperTest {
 
     @Test
     void fromJobTaskMessageRegular() {
-        JobTaskMessage.JobConfig jobConfig = JobTaskMessage.JobConfig.builder()
+        JobConfig jobConfig = JobConfig.builder()
                 .nugetConfigXml("<config />")
                 .build();
 
@@ -93,10 +93,10 @@ class KafkaDtoMapperTest {
         JobFinishedMessage jobFinishedMessage = kafkaDtoMapper.toJobFinishedMessage(jobResults);
         assertNotNull(jobFinishedMessage);
         assertEquals(jobId, jobFinishedMessage.getJobId());
-        assertEquals(JobFinishedMessage.Status.ACCEPTED, jobFinishedMessage.getStatus());
-        JobFinishedMessage.ScriptResults jobFinishedMessageScriptResults = jobFinishedMessage.getScriptResults();
+        assertEquals(JobStatus.ACCEPTED, jobFinishedMessage.getStatus());
+        ScriptResults jobFinishedMessageScriptResults = jobFinishedMessage.getScriptResults();
         assertNotNull(jobFinishedMessageScriptResults);
-        assertEquals(JobFinishedMessage.ScriptResults.JobCompletionStatus.SUCCEEDED,
+        assertEquals(JobCompletionStatus.SUCCEEDED,
                 jobFinishedMessageScriptResults.getFinishedWith());
         assertEquals("some stdout", jobFinishedMessageScriptResults.getStdout());
         assertEquals("some stderr", jobFinishedMessageScriptResults.getStderr());
@@ -114,8 +114,8 @@ class KafkaDtoMapperTest {
         JobFinishedMessage jobFinishedMessage = kafkaDtoMapper.toJobFinishedMessage(jobResults);
         assertNotNull(jobFinishedMessage);
         assertEquals(jobId, jobFinishedMessage.getJobId());
-        assertEquals(JobFinishedMessage.Status.ACCEPTED, jobFinishedMessage.getStatus());
-        JobFinishedMessage.ScriptResults jobFinishedMessageScriptResults = jobFinishedMessage.getScriptResults();
+        assertEquals(JobStatus.ACCEPTED, jobFinishedMessage.getStatus());
+        ScriptResults jobFinishedMessageScriptResults = jobFinishedMessage.getScriptResults();
         assertNull(jobFinishedMessageScriptResults);
     }
 

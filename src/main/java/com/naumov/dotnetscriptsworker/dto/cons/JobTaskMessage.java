@@ -3,15 +3,15 @@ package com.naumov.dotnetscriptsworker.dto.cons;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.UUID;
 
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public final class JobTaskMessage {
     @NotNull
     private UUID jobId;
@@ -20,10 +20,12 @@ public final class JobTaskMessage {
     @Valid
     private JobConfig jobConfig;
 
-    @Getter
-    @Setter
-    @Builder
-    public static final class JobConfig {
-        private String nugetConfigXml;
+    @Override
+    public String toString() {
+        return "JobTaskMessage{" +
+                "jobId=" + jobId +
+                ", script='" + script + '\'' +
+                ", jobConfig=" + jobConfig +
+                '}';
     }
 }

@@ -1,8 +1,8 @@
 package com.naumov.dotnetscriptsworker.dto;
 
+import com.naumov.dotnetscriptsworker.dto.cons.JobConfig;
 import com.naumov.dotnetscriptsworker.dto.cons.JobTaskMessage;
-import com.naumov.dotnetscriptsworker.dto.prod.JobFinishedMessage;
-import com.naumov.dotnetscriptsworker.dto.prod.JobStartedMessage;
+import com.naumov.dotnetscriptsworker.dto.prod.*;
 import com.naumov.dotnetscriptsworker.model.JobResults;
 import com.naumov.dotnetscriptsworker.model.JobTask;
 import org.springframework.stereotype.Component;
@@ -24,7 +24,7 @@ public final class KafkaDtoMapper {
                 .build();
     }
 
-    private JobTask.JobConfig fromJobConfig(JobTaskMessage.JobConfig jobConfigDto) {
+    private JobTask.JobConfig fromJobConfig(JobConfig jobConfigDto) {
         if (jobConfigDto == null) return null;
 
         return JobTask.JobConfig.builder()
@@ -51,38 +51,38 @@ public final class KafkaDtoMapper {
                 .build();
     }
 
-    private JobFinishedMessage.Status toJobFinishedMessageStatus(JobResults.Status status) {
+    private JobStatus toJobFinishedMessageStatus(JobResults.Status status) {
         if (status == null) return null;
 
         try {
-            return JobFinishedMessage.Status.valueOf(status.name());
+            return JobStatus.valueOf(status.name());
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException("Unable to map " + JobResults.Status.class.getName() + " to " +
-                    JobFinishedMessage.Status.class.getName() + " from value " + status);
+                    JobStatus.class.getName() + " from value " + status);
         }
     }
 
-    private JobFinishedMessage.ScriptResults toJobFinishedMessageScriptResults(JobResults.ScriptResults scriptResults) {
+    private ScriptResults toJobFinishedMessageScriptResults(JobResults.ScriptResults scriptResults) {
         if (scriptResults == null) return null;
 
-        return JobFinishedMessage.ScriptResults.builder()
+        return ScriptResults.builder()
                 .finishedWith(toJobFinishedMessageScriptResultsJobCompletionStatus(scriptResults.getFinishedWith()))
                 .stdout(scriptResults.getStdout())
                 .stderr(scriptResults.getStderr())
                 .build();
     }
 
-    private JobFinishedMessage.ScriptResults.JobCompletionStatus toJobFinishedMessageScriptResultsJobCompletionStatus(
+    private JobCompletionStatus toJobFinishedMessageScriptResultsJobCompletionStatus(
             JobResults.ScriptResults.JobCompletionStatus finishedWith
     ) {
         if (finishedWith == null) return null;
 
         try {
-            return JobFinishedMessage.ScriptResults.JobCompletionStatus.valueOf(finishedWith.name());
+            return JobCompletionStatus.valueOf(finishedWith.name());
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException("Unable to map " + JobResults.ScriptResults.JobCompletionStatus.class.getName() +
                     " to " +
-                    JobFinishedMessage.ScriptResults.JobCompletionStatus.class.getName() + " from value " + finishedWith);
+                    JobCompletionStatus.class.getName() + " from value " + finishedWith);
         }
     }
 }
