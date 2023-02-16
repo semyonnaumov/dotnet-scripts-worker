@@ -2,16 +2,18 @@ package com.naumov.dotnetscriptsworker.kafka;
 
 import com.naumov.dotnetscriptsworker.config.props.WorkerKafkaProperties;
 import com.naumov.dotnetscriptsworker.dto.KafkaDtoMapper;
-import com.naumov.dotnetscriptsworker.dto.prod.JobFinishedMessage;
-import com.naumov.dotnetscriptsworker.dto.prod.JobStartedMessage;
+import com.naumov.dotnetscriptsworker.dto.prod.*;
 import com.naumov.dotnetscriptsworker.model.JobResults;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -36,25 +38,54 @@ class JobMessagesProducerTest {
                 new KafkaDtoMapper()
         );
 
-        when(jobStartedKafkaTemplateMock.send(any(), any())).thenReturn(new CompletableFuture<>());
-        when(jobFinishedKafkaTemplateMock.send(any(), any())).thenReturn(new CompletableFuture<>());
+        when(jobStartedKafkaTemplateMock.send(any(), any(), any())).thenReturn(new CompletableFuture<>());
+        when(jobFinishedKafkaTemplateMock.send(any(), any(), any())).thenReturn(new CompletableFuture<>());
     }
 
     @Test
     void sendJobStartedMessageAsync() {
-        UUID uuid = UUID.randomUUID();
+        UUID jobId = UUID.randomUUID();
 
-        jobMessagesProducer.sendJobStartedMessageAsync(uuid);
+        jobMessagesProducer.sendJobStartedMessageAsync(jobId);
 
-        verify(jobStartedKafkaTemplateMock, times(1)).send(eq("running-topic"), any());
+        ArgumentCaptor<JobStartedMessage> messageCaptor = ArgumentCaptor.forClass(JobStartedMessage.class);
+        verify(jobStartedKafkaTemplateMock, times(1))
+                .send(eq("running-topic"), eq(jobId.toString()), messageCaptor.capture());
+        JobStartedMessage message = messageCaptor.getValue();
+        assertNotNull(message);
+        assertEquals(jobId, message.getJobId());
     }
 
     @Test
     void sendJobFinishedMessageAsync() {
-        JobResults jobResults = JobResults.builder().build();
+        String stdout = "some stdout";
+        String stderr = "some stderr";
+        JobResults.ScriptResults scriptResults = JobResults.ScriptResults.builder()
+                .finishedWith(JobResults.ScriptResults.JobCompletionStatus.SUCCEEDED)
+                .stdout(stdout)
+                .stderr(stderr)
+                .build();
+
+        UUID jobId = UUID.randomUUID();
+        JobResults jobResults = JobResults.builder()
+                .jobId(jobId)
+                .status(JobResults.Status.ACCEPTED)
+                .scriptResults(scriptResults)
+                .build();
 
         jobMessagesProducer.sendJobFinishedMessageAsync(jobResults);
 
-        verify(jobFinishedKafkaTemplateMock, times(1)).send(eq("finished-topic"), any());
+        ArgumentCaptor<JobFinishedMessage> jobMessageCaptor = ArgumentCaptor.forClass(JobFinishedMessage.class);
+        verify(jobFinishedKafkaTemplateMock, times(1))
+                .send(eq("finished-topic"), eq(jobId.toString()), jobMessageCaptor.capture());
+        JobFinishedMessage jobFinishedMessage = jobMessageCaptor.getValue();
+        assertNotNull(jobFinishedMessage);
+        assertEquals(jobId, jobFinishedMessage.getJobId());
+        assertEquals(JobStatus.ACCEPTED, jobFinishedMessage.getStatus());
+        ScriptResults results = jobFinishedMessage.getScriptResults();
+        assertNotNull(results);
+        assertEquals(JobCompletionStatus.SUCCEEDED, results.getFinishedWith());
+        assertEquals(stdout, results.getStdout());
+        assertEquals(stderr, results.getStderr());
     }
 }

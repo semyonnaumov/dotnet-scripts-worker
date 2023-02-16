@@ -38,7 +38,7 @@ public class JobMessagesProducer {
         JobStartedMessage jobStartedMessage = dtoMapper.toJobStartedMessage(jobId);
 
         LOGGER.debug("Sending job started message {} for job {}", jobStartedMessage, jobId);
-        jobStartedKafkaTemplate.send(runningTopic, jobStartedMessage)
+        jobStartedKafkaTemplate.send(runningTopic, jobId.toString(), jobStartedMessage)
                 .thenAccept(res -> {
                     LOGGER.info("Sent job {} started message to topic {}", jobId, runningTopic);
                 }).exceptionally(e -> {
@@ -53,7 +53,7 @@ public class JobMessagesProducer {
         UUID jobId = jobResults.getJobId();
 
         LOGGER.debug("Sending job finished message {} for job {}", jobFinishedMessage, jobId);
-        jobFinishedKafkaTemplate.send(finishedTopic, jobFinishedMessage)
+        jobFinishedKafkaTemplate.send(finishedTopic, jobId.toString(), jobFinishedMessage)
                 .thenAccept(res -> {
                     LOGGER.info("Sent job {} finished message to topic {}", jobId, finishedTopic);
                 }).exceptionally(e -> {
