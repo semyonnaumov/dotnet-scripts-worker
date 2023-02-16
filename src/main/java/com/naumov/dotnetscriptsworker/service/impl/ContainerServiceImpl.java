@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-@Service
+@Service("containerService")
 public class ContainerServiceImpl implements ContainerService {
     private static final Logger LOGGER = LogManager.getLogger(ContainerServiceImpl.class);
     private static final int IMAGE_PULL_TIMEOUT_SEC = 120;
