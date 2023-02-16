@@ -48,19 +48,16 @@ public class JobMessagesProducer {
     }
 
     public void sendJobFinishedMessageAsync(JobResults jobResults) {
-        JobFinishedMessage jobFinishedMessage = dtoMapper.toJobFinishedMessage(jobResults);
         String finishedTopic = kafkaProperties.getFinishedTopicName();
+        JobFinishedMessage jobFinishedMessage = dtoMapper.toJobFinishedMessage(jobResults);
+        UUID jobId = jobResults.getJobId();
 
-        LOGGER.debug("Sending job finished message {} for job {}",
-                jobFinishedMessage, jobFinishedMessage.getJobId());
-
+        LOGGER.debug("Sending job finished message {} for job {}", jobFinishedMessage, jobId);
         jobFinishedKafkaTemplate.send(finishedTopic, jobFinishedMessage)
                 .thenAccept(res -> {
-                    LOGGER.info("Sent job {} finished message to topic {}",
-                            jobFinishedMessage.getJobId(), finishedTopic);
+                    LOGGER.info("Sent job {} finished message to topic {}", jobId, finishedTopic);
                 }).exceptionally(e -> {
-                    LOGGER.error("Failed to send job {} finished message to topic {}",
-                            jobFinishedMessage.getJobId(), finishedTopic, e);
+                    LOGGER.error("Failed to send job {} finished message to topic {}", jobId, finishedTopic, e);
                     return null;
                 });
     }
