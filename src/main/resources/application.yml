@@ -42,14 +42,3 @@ worker:
     producer-acks: 1
     consumer-concurrency: ${worker.sandbox.max-containers}
     consumer-group: workers.${worker.sandbox.runner-type}
-  kafka-admin:
-    broker-url: ${worker.kafka.broker-url}
-    reconnect-backoff-ms: ${worker.kafka.reconnect-backoff-ms}
-    reconnect-backoff-max-ms: ${worker.kafka.reconnect-backoff-max-ms}
-    replication-factor: 2
-    jobs-topic-name: ${worker.kafka.jobs-topic-name}
-    jobs-topic-partitions: 2
-    running-topic-name: ${worker.kafka.running-topic-name}
-    running-topic-partitions: 2
-    finished-topic-name: ${worker.kafka.finished-topic-name}
-    finished-topic-partitions: 2

@@ -34,4 +34,6 @@ public class WorkerKafkaProperties {
     private Integer consumerConcurrency;
     @NotBlank
     private String producerAcks;
+    @NotBlank
+    private String autoOffsetReset = "latest";
 }
