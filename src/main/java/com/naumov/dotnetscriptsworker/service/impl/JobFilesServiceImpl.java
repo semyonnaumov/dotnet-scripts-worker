@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -30,6 +31,8 @@ public class JobFilesServiceImpl implements JobFilesService {
 
     @Override
     public String prepareJobFiles(JobTask jobTask) {
+        validate(jobTask);
+
         UUID jobId = jobTask.getJobId();
         try {
             Path tempDirPath = getJobTempDirectoryPath(jobId);
@@ -49,6 +52,12 @@ public class JobFilesServiceImpl implements JobFilesService {
             LOGGER.error("Failed to prepare files for job {}", jobId, e);
             throw new ScriptFilesServiceException("Failed to prepare files for job " + jobId, e);
         }
+    }
+
+    private static void validate(JobTask jobTask) {
+        Objects.requireNonNull(jobTask, "Job task must not be null");
+        Objects.requireNonNull(jobTask.getJobId(), "Job is must not be null");
+        Objects.requireNonNull(jobTask.getJobScript(), "Job script must not be null");
     }
 
     @Override

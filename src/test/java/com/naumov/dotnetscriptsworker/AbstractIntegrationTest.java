@@ -28,17 +28,18 @@ public abstract class AbstractIntegrationTest {
             .withClasspathResourceMapping("dockercerts/ca", "/certs/ca", BindMode.READ_WRITE)
             .withClasspathResourceMapping("dockercerts/client", "/certs/client", BindMode.READ_WRITE);
 
-
     @DynamicPropertySource
     public static void overrideProperties(DynamicPropertyRegistry registry) {
         URL dockercertsUrl = AbstractIntegrationTest.class.getClassLoader().getResource("dockercerts");
-        if (dockercertsUrl == null) {
-            throw new IllegalStateException("Folder 'dockercerts' must be on the test classpath");
-        }
+        if (dockercertsUrl == null) throw new IllegalStateException("Folder 'dockercerts' must be on the test classpath");
+
+        URL tempfilesUrl = AbstractIntegrationTest.class.getClassLoader().getResource("tempfiles");
+        if (tempfilesUrl == null) throw new IllegalStateException("Folder 'tempfiles' must be on the test classpath");
 
         Startables.deepStart(kafka, dind);
         registry.add("scheduler.kafka.broker-url", kafka::getBootstrapServers);
         registry.add("worker.docker-client.docker-host", () -> "tcp://localhost:" + dind.getMappedPort(DOCKER_INTERNAL_PORT));
         registry.add("worker.docker-client.docker-cert-path", () -> dockercertsUrl.getPath() + "/client");
+        registry.add("worker.sandbox.job-files-host-dir", tempfilesUrl::getPath);
     }
 }
