@@ -12,6 +12,7 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -19,12 +20,15 @@ public class JobMessagesConsumer {
     private static final Logger LOGGER = LogManager.getLogger(JobMessagesConsumer.class);
     private final JobService jobService;
     private final KafkaDtoMapper kafkaDtoMapper;
+    private final Optional<Reporter<JobTaskMessage>> messageProcessedReporter;
 
     @Autowired
     public JobMessagesConsumer(JobService jobService,
-                               KafkaDtoMapper kafkaDtoMapper) {
+                               KafkaDtoMapper kafkaDtoMapper,
+                               Optional<Reporter<JobTaskMessage>> messageProcessedReporter) {
         this.jobService = jobService;
         this.kafkaDtoMapper = kafkaDtoMapper;
+        this.messageProcessedReporter = messageProcessedReporter;
     }
 
     @KafkaListener(
@@ -35,12 +39,19 @@ public class JobMessagesConsumer {
     public void onJobTaskMessage(@Payload @Valid JobTaskMessage jobTaskMessage, Acknowledgment ack) {
         ack.acknowledge();
         UUID messageId = UUID.randomUUID();
-        LOGGER.info("Received job {} task message, assigned message id {}", jobTaskMessage.getJobId(), messageId);
+        UUID jobId = jobTaskMessage.getJobId();
+        LOGGER.info("Received job task {}, assigned message id {}", jobId, messageId);
         try {
             jobService.runJob(kafkaDtoMapper.fromJobTaskMessage(jobTaskMessage, messageId));
+            LOGGER.info("Finished running job for job task {} with message id {}", jobId, messageId);
+            onJobMessageProcessed(jobTaskMessage);
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to run job for job task {} with message id {}", jobTaskMessage.getJobId(), messageId);
+            LOGGER.error("Failed to run job for job task {} with message id {}", jobId, messageId);
             throw e;
         }
+    }
+
+    private void onJobMessageProcessed(JobTaskMessage jobMessage) {
+        messageProcessedReporter.ifPresent(r -> r.report(jobMessage));
     }
 }
