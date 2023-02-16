@@ -1,15 +1,17 @@
 package com.naumov.dotnetscriptsworker;
 
-import com.github.dockerjava.api.model.Bind;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.lifecycle.Startables;
 import org.testcontainers.utility.DockerImageName;
+
+import java.net.URL;
 
 @SpringBootTest
 @Testcontainers
@@ -23,17 +25,20 @@ public abstract class AbstractIntegrationTest {
     public static GenericContainer<?> dind = new GenericContainer<>(DockerImageName.parse("docker:20-dind"))
             .withExposedPorts(DOCKER_INTERNAL_PORT)
             .withPrivilegedMode(true)
-            .withEnv("DOCKER_TLS_CERTDIR", "/certs")
-            .withCreateContainerCmdModifier(cmd -> cmd.getHostConfig().withBinds(
-                    Bind.parse("/Users/snaumov/Desktop/dockercerts/ca:/certs/ca"),
-                    Bind.parse("/Users/snaumov/Desktop/dockercerts/client:/certs/client")
-            ));
+            .withClasspathResourceMapping("dockercerts/ca", "/certs/ca", BindMode.READ_WRITE)
+            .withClasspathResourceMapping("dockercerts/client", "/certs/client", BindMode.READ_WRITE);
+
 
     @DynamicPropertySource
     public static void overrideProperties(DynamicPropertyRegistry registry) {
+        URL dockercertsUrl = AbstractIntegrationTest.class.getClassLoader().getResource("dockercerts");
+        if (dockercertsUrl == null) {
+            throw new IllegalStateException("Folder 'dockercerts' must be on the test classpath");
+        }
+
         Startables.deepStart(kafka);
         registry.add("scheduler.kafka.broker-url", kafka::getBootstrapServers);
         registry.add("worker.docker-client.docker-host", () -> "tcp://localhost:" + dind.getMappedPort(DOCKER_INTERNAL_PORT));
-        registry.add("worker.docker-client.docker-cert-path", () -> "/Users/snaumov/Desktop/dockercerts/client");
+        registry.add("worker.docker-client.docker-cert-path", () -> dockercertsUrl.getPath() + "/client");
     }
 }
