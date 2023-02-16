@@ -22,9 +22,9 @@ class DotnetScriptsWorkerApplicationTests extends AbstractIntegrationTest {
     @TestConfiguration
     public static class MockOverridingContainerServiceConfig {
 
-        @Bean
-        ContainerService containerService() {
-            return new SimpleContainerServiceMock();
-        }
+//        @Bean
+//        ContainerService containerService() {
+//            return new SimpleContainerServiceMock();
+//        }
     }
 }

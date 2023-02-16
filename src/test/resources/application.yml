@@ -23,8 +23,8 @@ worker:
       storage-size: 5G # currently not supported
   docker-client:
     docker-host: ${WORKER_DOCKER_HOST:unix:/var/run/docker.sock}
-    docker-tls-verify: false
-    docker-cert-path: ${WORKER_DOCKER_CERT_PAT}
+    docker-tls-verify: true
+    docker-cert-path: ${WORKER_DOCKER_CERT_PATH}
     registry-url: docker.io
     registry-user: ${WORKER_REGISTRY_USER:comnaumovdotnetscripts}
     registry-password: ${WORKER_REGISTRY_PASSWORD:1234567890}
