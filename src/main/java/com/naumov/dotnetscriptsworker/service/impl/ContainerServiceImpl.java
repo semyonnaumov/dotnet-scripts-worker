@@ -11,7 +11,6 @@ import com.github.dockerjava.api.model.*;
 import com.naumov.dotnetscriptsworker.config.props.SandboxContainerProperties;
 import com.naumov.dotnetscriptsworker.service.ContainerService;
 import com.naumov.dotnetscriptsworker.service.exception.ContainerServiceException;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,7 +25,6 @@ import java.util.stream.Collectors;
 @Service("containerService")
 public class ContainerServiceImpl implements ContainerService {
     private static final Logger LOGGER = LogManager.getLogger(ContainerServiceImpl.class);
-    private static final int IMAGE_PULL_TIMEOUT_SEC = 120;
     private static final long MEGABYTE_MULTIPLIER = 1024 * 1024;
     private static final String NO_NEW_PRIVILEGES_SECURITY_OPT = "no-new-privileges";
     private static final String STORAGE_OPT_SIZE = "size";
@@ -38,38 +36,6 @@ public class ContainerServiceImpl implements ContainerService {
                                 SandboxContainerProperties sandboxContainerProperties) {
         this.dockerClient = dockerClient;
         this.sandboxContainerProperties = sandboxContainerProperties;
-    }
-
-    @PostConstruct
-    public void init() {
-        try {
-            LOGGER.info("Initialization: start pulling sandbox image");
-            pullSandboxImage();
-            LOGGER.info("Initialization: finished pulling sandbox image");
-        } catch (Exception e) {
-            LOGGER.error("Initialization: failed to pull sandbox image", e);
-            throw new ContainerServiceException("Failed to pull", e);
-        }
-    }
-
-    private void pullSandboxImage() throws InterruptedException {
-        LOGGER.info("Pulling image {}", sandboxContainerProperties.getImage());
-        boolean successfullyPulled = dockerClient.pullImageCmd(sandboxContainerProperties.getImageName())
-                .withTag(sandboxContainerProperties.getImageTag())
-                .exec(new ResultCallback.Adapter<PullResponseItem>() {
-                    @Override
-                    public void onNext(PullResponseItem item) {
-                        if (item.isPullSuccessIndicated()) {
-                            LOGGER.info("Successfully pulled {}", item.getId());
-                        } else if (item.isErrorIndicated()) {
-                            LOGGER.error("Failed to pull {}: {}", item.getId(), item.getErrorDetail());
-                        }
-                    }
-                })
-                .awaitCompletion(IMAGE_PULL_TIMEOUT_SEC, TimeUnit.SECONDS);
-        if (!successfullyPulled) {
-            throw new ContainerServiceException("Failed to pull image " + sandboxContainerProperties.getImage());
-        }
     }
 
     @Override
@@ -95,10 +61,34 @@ public class ContainerServiceImpl implements ContainerService {
 
     private List<Container> getAllContainers() {
         try {
-            return dockerClient.listContainersCmd().exec();
+            return dockerClient.listContainersCmd().withShowAll(true).exec();
         } catch (RuntimeException e) {
             LOGGER.error("Failed to get all containers", e);
             throw new ContainerServiceException("Failed to get all containers", e);
+        }
+    }
+
+    @Override
+    public void pullImage(String imageName, String imageTag, int timeoutSec) throws InterruptedException {
+        LOGGER.info("Pulling image {}:{}", imageName, imageTag);
+        boolean success = dockerClient.pullImageCmd(imageName).withTag(imageTag)
+                .exec(new ResultCallback.Adapter<PullResponseItem>() {
+                    @Override
+                    public void onNext(PullResponseItem item) {
+                        if (item.isPullSuccessIndicated()) {
+                            LOGGER.info("Pulled {}", item.getId());
+                        } else if (item.isErrorIndicated()) {
+                            LOGGER.error("Failed to pull {}: {}", item.getId(), item.getErrorDetail());
+                        }
+                    }
+                })
+                .awaitCompletion(timeoutSec, TimeUnit.SECONDS);
+
+        if (success) {
+            LOGGER.info("Successfully pulled image {}:{}", imageName, imageTag);
+        } else {
+            LOGGER.error("Failed to pull image {}:{}", imageName, imageTag);
+            throw new ContainerServiceException("Failed to pull image " + imageName + ":" + imageTag);
         }
     }
 
@@ -120,8 +110,8 @@ public class ContainerServiceImpl implements ContainerService {
                         .withCpuShares(sandboxContainerProperties.getCpuShares())
                         .withPidsLimit(sandboxContainerProperties.getPidsLimit())
                         .withBlkioWeight(sandboxContainerProperties.getBlkioWeight());
-                        // TODO not working: com.github.dockerjava.api.exception.InternalServerErrorException:
-                        //  Status 500: {"message":"--storage-opt is supported only for overlay over xfs with 'pquota' mount option"}
+                // TODO not working: com.github.dockerjava.api.exception.InternalServerErrorException:
+                //  Status 500: {"message":"--storage-opt is supported only for overlay over xfs with 'pquota' mount option"}
 //                        .withStorageOpt(Collections.singletonMap(STORAGE_OPT_SIZE, sandboxContainerProperties.getStorageSize()))
             }
 
@@ -188,16 +178,16 @@ public class ContainerServiceImpl implements ContainerService {
     }
 
     @Override
-    public String getStdout(String containerId, long timeoutMs) {
-        return getLogs(containerId, true, timeoutMs);
+    public String getStdout(String containerId, int timeoutSec) {
+        return getLogs(containerId, true, timeoutSec);
     }
 
     @Override
-    public String getStderr(String containerId, long timeoutMs) {
-        return getLogs(containerId, false, timeoutMs);
+    public String getStderr(String containerId, int timeoutSec) {
+        return getLogs(containerId, false, timeoutSec);
     }
 
-    private String getLogs(String containerId, boolean isStdout, long timeoutMs) {
+    private String getLogs(String containerId, boolean isStdout, int timeoutSec) {
         try {
             List<String> logLines = new ArrayList<>();
             dockerClient.logContainerCmd(containerId)
@@ -209,7 +199,7 @@ public class ContainerServiceImpl implements ContainerService {
                             logLines.add(new String(item.getPayload()));
                         }
                     })
-                    .awaitCompletion(timeoutMs, TimeUnit.MILLISECONDS);
+                    .awaitCompletion(timeoutSec, TimeUnit.SECONDS);
 
             LOGGER.info("Received logs for container {}", containerId);
             return String.join(System.lineSeparator(), logLines);

@@ -24,6 +24,16 @@ public interface ContainerService {
     List<String> getAllContainersIdsWithNamePrefix(String prefix);
 
     /**
+     * Pulls image from remote registry.
+     *
+     * @param imageName  image name
+     * @param imageTag   image tag
+     * @param timeoutSec timeout for pulling
+     * @throws InterruptedException is thrown when thread is interrupted while pulling
+     */
+    void pullImage(String imageName, String imageTag, int timeoutSec) throws InterruptedException;
+
+    /**
      * Creates a job task container.
      *
      * @param containerName          name to set to container
@@ -64,19 +74,19 @@ public interface ContainerService {
      * Retrieves the STDOUT of the container in the blocking manner.
      *
      * @param containerId container to retrieve STDOUT from
-     * @param timeoutMs   timeout to wait for while trying
+     * @param timeoutSec  timeout to wait for while trying
      * @return STDOUT string
      */
-    String getStdout(String containerId, long timeoutMs);
+    String getStdout(String containerId, int timeoutSec);
 
     /**
      * Retrieves the STDERR of the container in the blocking manner.
      *
      * @param containerId container to retrieve STDERR from
-     * @param timeoutMs   timeout to wait for while trying
+     * @param timeoutSec  timeout to wait for while trying
      * @return STDERR string
      */
-    String getStderr(String containerId, long timeoutMs);
+    String getStderr(String containerId, int timeoutSec);
 
     /**
      * Retrieves the exit code of the container.

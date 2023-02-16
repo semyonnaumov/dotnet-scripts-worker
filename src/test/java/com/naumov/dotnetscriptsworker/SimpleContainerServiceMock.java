@@ -31,6 +31,10 @@ public class SimpleContainerServiceMock implements ContainerService {
     }
 
     @Override
+    public void pullImage(String imageName, String imageTag, int timeoutSec) {
+    }
+
+    @Override
     public String createContainer(String containerName,
                                   String imageName,
                                   List<String> volumeBindsDescriptors,
@@ -59,7 +63,7 @@ public class SimpleContainerServiceMock implements ContainerService {
     }
 
     @Override
-    public String getStdout(String containerId, long timeoutMs) {
+    public String getStdout(String containerId, int timeoutSec) {
         if (getOptionalContainer(containerId).isPresent()) {
             return "stdout";
         } else {
@@ -68,7 +72,7 @@ public class SimpleContainerServiceMock implements ContainerService {
     }
 
     @Override
-    public String getStderr(String containerId, long timeoutMs) {
+    public String getStderr(String containerId, int timeoutSec) {
         if (getOptionalContainer(containerId).isPresent()) {
             return "stdout";
         } else {

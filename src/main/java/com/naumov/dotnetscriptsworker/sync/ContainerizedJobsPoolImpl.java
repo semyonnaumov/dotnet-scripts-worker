@@ -22,9 +22,9 @@ public final class ContainerizedJobsPoolImpl implements ContainerizedJobsPool {
     }
 
     @Override
-    public ContainerizedJob tryAllocate(UUID jobId, long timeoutMs) throws ContainerizedJobAllocationException {
+    public ContainerizedJob tryAllocate(UUID jobId, int timeoutSec) throws ContainerizedJobAllocationException {
         Objects.requireNonNull(jobId, "Parameter jobId must not be null");
-        long timeRemainingNs = TimeUnit.MILLISECONDS.toNanos(timeoutMs);
+        long timeRemainingNs = TimeUnit.SECONDS.toNanos(timeoutSec);
         containerizedJobsMapLock.lock();
         try {
             if (containerizedJobsMap.containsKey(jobId)) {

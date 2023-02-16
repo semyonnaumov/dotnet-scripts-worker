@@ -1,30 +1,38 @@
 package com.naumov.dotnetscriptsworker;
 
+import com.naumov.dotnetscriptsworker.config.props.SandboxContainerProperties;
 import com.naumov.dotnetscriptsworker.service.ContainerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.test.annotation.DirtiesContext;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DirtiesContext
 class DotnetScriptsWorkerApplicationTests extends AbstractIntegrationTest {
     @Autowired
     private ContainerService containerService;
+    @Autowired
+    private SandboxContainerProperties sandboxContainerProperties;
 
     @Test
     void contextLoads() {
-        assertTrue(containerService.getAllContainersIds().isEmpty());
     }
 
-    @TestConfiguration
-    public static class MockOverridingContainerServiceConfig {
+    @Test
+    void containerCreatesAndDeletes() {
+        String containerId = containerService.createContainer(
+                "test-container",
+                sandboxContainerProperties.getImage(),
+                List.of(),
+                Optional.empty()
+        );
 
-//        @Bean
-//        ContainerService containerService() {
-//            return new SimpleContainerServiceMock();
-//        }
+        assertEquals(1, containerService.getAllContainersIds().size());
+        assertEquals(containerId, containerService.getAllContainersIds().get(0));
+        containerService.removeContainer(containerId, true);
     }
 }

@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class JobServiceImpl implements JobService {
@@ -50,20 +51,29 @@ public class JobServiceImpl implements JobService {
     }
 
     @PostConstruct
-    public void init() {
+    public void init() throws InterruptedException {
         try {
             String prefix = sandboxContainerProperties.getNamePrefix();
-            LOGGER.info("Initialization: starting container environment cleanup - " +
-                    "removing all containers with name prefix {}", prefix);
+            LOGGER.info("Initialization: starting container environment setup");
+
+            String imageName = sandboxContainerProperties.getImageName();
+            String imageTag = sandboxContainerProperties.getImageTag();
+            containerService.pullImage(
+                    imageName,
+                    imageTag,
+                    sandboxProperties.getImagePullTimeoutSec()
+            );
+            LOGGER.info("Initialization: pulled sandbox image {}:{}", imageName, imageTag);
 
             List<String> containers = containerService.getAllContainersIdsWithNamePrefix(prefix);
             for (String containerId : containers) {
                 containerService.removeContainer(containerId, false);
-                LOGGER.info("Initialization: removed container {}", containerId);
+                LOGGER.info("Initialization: removed garbage container {}", containerId);
             }
-            LOGGER.info("Initialization: finished container environment cleanup");
+
+            LOGGER.info("Initialization: finished container environment setup");
         } catch (RuntimeException e) {
-            LOGGER.error("Initialization: failed container environment cleanup", e);
+            LOGGER.error("Initialization: failed container environment setup", e);
             throw e;
         }
     }
@@ -74,7 +84,7 @@ public class JobServiceImpl implements JobService {
         JobResults.JobResultsBuilder jobResultsBuilder = JobResults.builder().jobId(jobId);
         ContainerizedJob containerizedJob;
         try {
-            containerizedJob = containerizedJobsPool.tryAllocate(jobId, sandboxProperties.getContainerOperationsTimeoutMs());
+            containerizedJob = containerizedJobsPool.tryAllocate(jobId, sandboxProperties.getContainerOperationsTimeoutSec());
             if (containerizedJob.isRequestedMultipleTimes()) {
                 // such job is already running - do nothing (container-environment-wide deduping)
                 LOGGER.info("Skipped running job {}, it is a duplicate", jobId);
@@ -145,12 +155,12 @@ public class JobServiceImpl implements JobService {
 
     private JobResults.ScriptResults getJobContainerResults(UUID jobId,
                                                             String containerId) {
-        long jobTimeoutMs = sandboxProperties.getJobTimeoutMs();
-        long containerOperationsTimeoutMs = sandboxProperties.getContainerOperationsTimeoutMs();
+        int jobTimeoutSec = sandboxProperties.getJobTimeoutSec();
+        int containerOperationsTimeoutSec = sandboxProperties.getContainerOperationsTimeoutSec();
 
         try {
             JobResults.ScriptResults.JobCompletionStatus completionStatus;
-            if (completedInTime(containerId, jobTimeoutMs)) {
+            if (completedInTime(containerId, jobTimeoutSec)) {
                 completionStatus = containerService.getExitCode(containerId) == 0
                         ? JobResults.ScriptResults.JobCompletionStatus.SUCCEEDED
                         : JobResults.ScriptResults.JobCompletionStatus.FAILED;
@@ -164,8 +174,8 @@ public class JobServiceImpl implements JobService {
 
             JobResults.ScriptResults scriptResults = JobResults.ScriptResults.builder()
                     .finishedWith(completionStatus)
-                    .stdout(containerService.getStdout(containerId, containerOperationsTimeoutMs))
-                    .stderr(containerService.getStderr(containerId, containerOperationsTimeoutMs))
+                    .stdout(containerService.getStdout(containerId, containerOperationsTimeoutSec))
+                    .stderr(containerService.getStderr(containerId, containerOperationsTimeoutSec))
                     .build();
 
             LOGGER.info("Finished job {} in container {}", jobId, containerId);
@@ -175,8 +185,8 @@ public class JobServiceImpl implements JobService {
         }
     }
 
-    private boolean completedInTime(String containerId, Long jobTimeoutMs) {
-        Timer jobTimer = new Timer(jobTimeoutMs);
+    private boolean completedInTime(String containerId, int jobTimeoutSec) {
+        Timer jobTimer = new Timer(TimeUnit.SECONDS.toMillis(jobTimeoutSec));
         jobTimer.start();
         while (!jobTimer.isFinished()) {
             if (!containerService.isRunning(containerId)) return true;

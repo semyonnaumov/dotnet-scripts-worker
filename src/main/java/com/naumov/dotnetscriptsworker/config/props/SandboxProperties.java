@@ -1,5 +1,6 @@
 package com.naumov.dotnetscriptsworker.config.props;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,12 +16,15 @@ import org.springframework.validation.annotation.Validated;
 public class SandboxProperties {
     @NotBlank
     private String runnerType;
-    @NotNull
-    @Min(100)
-    private Long containerOperationsTimeoutMs;
-    @NotNull
-    @Min(1000)
-    private Long jobTimeoutMs;
+    @Min(1)
+    @Max(60)
+    private int containerOperationsTimeoutSec;
+    @Min(1)
+    @Max(600)
+    private int jobTimeoutSec;
+    @Min(10)
+    @Max(120)
+    private int imagePullTimeoutSec;
     @NotBlank
     private String jobFilesHostDir;
     @NotBlank

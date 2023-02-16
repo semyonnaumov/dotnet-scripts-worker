@@ -1,8 +1,9 @@
 worker:
   sandbox:
     runner-type: linux-amd64-dotnet-7
-    container-operations-timeout-ms: 60000 # 1 min
-    job-timeout-ms: 120000 # 2 min
+    container-operations-timeout-sec: 30
+    job-timeout-sec: 120
+    image-pull-timeout-sec: 30
     job-files-host-dir: ${WORKER_JOB_FILES_HOST_DIR:/tmp/scripts}
     job-files-container-dir: /tmp/script
     job-script-file-name: main.csx
@@ -10,7 +11,7 @@ worker:
     container:
       image-name: alpine
       image-tag: 3.17.2
-      image: alpine:3.17.2
+      image: ${worker.sandbox.container.image-name}:${worker.sandbox.container.image-tag}
       name-prefix: sandbox-job-
       override-entrypoint: false
       enable-resource-limits: ${WORKER_ENABLE_RESOURCE_LIMITS:true}
