@@ -44,3 +44,4 @@ worker:
     producer-acks: 1
     consumer-concurrency: ${worker.sandbox.max-containers}
     consumer-group: workers.${worker.sandbox.runner-type}
+    auto-offset-reset: earliest
