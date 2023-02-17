@@ -79,8 +79,8 @@ docker exec -it dsw-kafka-broker-1 sh
 
 ```bash
 kafka-console-producer --bootstrap-server localhost:9092 \
-	--topic pending-linux-amd64-dotnet-7 --property "parse.key=true" \
-	--property "key.separator=:"
+    --topic pending-linux-amd64-dotnet-7 --property "parse.key=true" \
+    --property "key.separator=:"
 ```
 
 В качестве ключа для отправки можно использовать что угодно, ключ не читается приложением, но используется кафкой для
@@ -99,10 +99,10 @@ key1:{"jobId": "7f000001-863c-17b2-8186-3cdeb62e0000","script": "Console.WriteLi
 
 ```bash
 kafka-console-consumer --bootstrap-server localhost:9092 \
-	--topic running --from-beginning --group console
+    --topic running --from-beginning --group console
 ```
 
 ```bash
 kafka-console-consumer --bootstrap-server localhost:9092 \
-	--topic finished --from-beginning --group console
+    --topic finished --from-beginning --group console
 ```
