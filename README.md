@@ -39,7 +39,7 @@ docker compose up -d
 После этого можно собрать и запустить приложение:
 
 ```bash
-WORKER_JOB_FILES_HOST_DIR=$HOME/tmp
+export WORKER_JOB_FILES_HOST_DIR=$HOME/tmp
 ./gradlew bootRun
 ```
 
