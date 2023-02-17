@@ -2,7 +2,7 @@ worker:
   sandbox:
     runner-type: linux-amd64-dotnet-7
     container-operations-timeout-sec: 30
-    job-timeout-sec: 120
+    job-timeout-sec: 30
     image-pull-timeout-sec: 30
     job-files-host-dir: ${WORKER_JOB_FILES_HOST_DIR:/tmp/scripts}
     job-files-container-dir: /tmp/script

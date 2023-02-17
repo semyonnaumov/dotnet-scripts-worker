@@ -12,6 +12,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 public final class JobTaskMessage {
     @NotNull
     private UUID jobId;

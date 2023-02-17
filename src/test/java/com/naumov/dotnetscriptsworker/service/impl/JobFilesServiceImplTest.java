@@ -1,6 +1,5 @@
 package com.naumov.dotnetscriptsworker.service.impl;
 
-import com.naumov.dotnetscriptsworker.AbstractIntegrationTest;
 import com.naumov.dotnetscriptsworker.config.props.SandboxProperties;
 import com.naumov.dotnetscriptsworker.model.JobTask;
 import com.naumov.dotnetscriptsworker.service.JobFilesService;
@@ -9,8 +8,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,11 +15,10 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 
+import static com.naumov.dotnetscriptsworker.TestFileUtil.clearDirectoryIfExists;
+import static com.naumov.dotnetscriptsworker.TestFileUtil.isDirectoryEmpty;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JobFilesServiceImplTest {
@@ -44,7 +40,7 @@ class JobFilesServiceImplTest {
 
         assertTrue(Files.isDirectory(tempDirPath));
         if (!isDirectoryEmpty(tempDirPath)) {
-            clearDirectory(tempDirPath);
+            clearDirectoryIfExists(tempDirPath);
         }
     }
 
@@ -55,28 +51,7 @@ class JobFilesServiceImplTest {
 
     @AfterEach
     void tearDown() throws IOException {
-        clearDirectory(tempDirPath);
-    }
-
-    private static void clearDirectory(Path path) throws IOException {
-        try (Stream<Path> pathStream = Files.walk(path)) {
-            List<Path> pathsToDelete = pathStream.sorted(Comparator.reverseOrder()).toList();
-            for (Path pathToDelete : pathsToDelete) {
-                if (!path.equals(pathToDelete)) {
-                    Files.deleteIfExists(pathToDelete);
-                }
-            }
-        }
-    }
-
-    public static boolean isDirectoryEmpty(Path path) throws IOException {
-        if (Files.isDirectory(path)) {
-            try (Stream<Path> entries = Files.list(path)) {
-                return entries.findFirst().isEmpty();
-            }
-        }
-
-        return false;
+        clearDirectoryIfExists(tempDirPath);
     }
 
     @Test
@@ -197,13 +172,5 @@ class JobFilesServiceImplTest {
 
         assertThrows(ScriptFilesServiceException.class, () -> jobFilesService.cleanupJobFiles(UUID.randomUUID()));
         assertFalse(isDirectoryEmpty(jobDirPath));
-    }
-
-    @DynamicPropertySource
-    public static void overrideProperties(DynamicPropertyRegistry registry) {
-        URL tempfilesUrl = AbstractIntegrationTest.class.getClassLoader().getResource("tempfiles");
-        if (tempfilesUrl == null) throw new IllegalStateException("Folder 'tempfiles' must be on the test classpath");
-
-        registry.add("worker.sandbox.job-files-host-dir", tempfilesUrl::getPath);
     }
 }

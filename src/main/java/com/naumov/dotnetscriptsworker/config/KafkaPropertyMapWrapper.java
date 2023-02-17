@@ -1,6 +1,5 @@
 package com.naumov.dotnetscriptsworker.config;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,6 +14,6 @@ public class KafkaPropertyMapWrapper {
     }
 
     public Map<String, Object> toMap() {
-        return Collections.unmodifiableMap(props);
+        return new HashMap<>(props);
     }
 }

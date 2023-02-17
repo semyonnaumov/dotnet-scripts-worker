@@ -1,6 +1,7 @@
 package com.naumov.dotnetscriptsworker;
 
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.BindMode;
@@ -15,6 +16,7 @@ import java.net.URL;
 
 @SpringBootTest
 @Testcontainers
+@DirtiesContext
 public abstract class AbstractIntegrationTest {
     private static final int DOCKER_INTERNAL_PORT = 2376;
 
@@ -37,7 +39,7 @@ public abstract class AbstractIntegrationTest {
         if (tempfilesUrl == null) throw new IllegalStateException("Folder 'tempfiles' must be on the test classpath");
 
         Startables.deepStart(kafka, dind);
-        registry.add("scheduler.kafka.broker-url", kafka::getBootstrapServers);
+        registry.add("worker.kafka.broker-url", kafka::getBootstrapServers);
         registry.add("worker.docker-client.docker-host", () -> "tcp://localhost:" + dind.getMappedPort(DOCKER_INTERNAL_PORT));
         registry.add("worker.docker-client.docker-cert-path", () -> dockercertsUrl.getPath() + "/client");
         registry.add("worker.sandbox.job-files-host-dir", tempfilesUrl::getPath);
