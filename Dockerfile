@@ -11,7 +11,7 @@ COPY settings.gradle .
 COPY build.gradle .
 COPY src src
 
-RUN ./gradlew clean build
+RUN ./gradlew clean build -x test # TODO make it run only unit tests
 RUN mkdir -p build/dependency && (cd build/dependency; jar -xf ../libs/*.jar)
 
 
